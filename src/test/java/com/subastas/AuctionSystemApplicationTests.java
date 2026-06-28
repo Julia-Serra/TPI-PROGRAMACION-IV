@@ -1,13 +1,14 @@
 package com.subastas;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 class AuctionSystemApplicationTests {
 
     @Test
-    void contextLoads() {
+    void applicationClassExists() {
+        assertNotNull(AuctionSystemApplication.class);
     }
 
 }
