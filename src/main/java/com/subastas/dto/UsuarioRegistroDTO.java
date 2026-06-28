@@ -1,7 +1,9 @@
 package com.subastas.dto;
 
+import com.subastas.enums.RolUsuario;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record UsuarioRegistroDTO(
 
@@ -13,7 +15,10 @@ public record UsuarioRegistroDTO(
         String email,
 
         @NotBlank(message = "La contraseña es obligatoria")
-        String password
+        String password,
+
+        @NotNull(message = "El rol es obligatorio")
+        RolUsuario rol
 
 ) {
 }
