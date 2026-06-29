@@ -1,4 +1,47 @@
 package com.subastas.controller;
 
+import com.subastas.dto.CrearSubastaDTO;
+import com.subastas.entity.Subasta;
+import com.subastas.service.SubastaService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/subastas")
 public class SubastaController {
+
+    private final SubastaService subastaService;
+
+    public SubastaController(SubastaService subastaService) {
+        this.subastaService = subastaService;
+    }
+
+    @GetMapping
+    public List<Subasta> listarActivas() {
+        return subastaService.obtenerSubastasActivas();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Subasta> obtenerDetalle(@PathVariable Long id) {
+        return subastaService.obtenerDetalle(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Subasta> crearSubasta(
+            @Valid @RequestBody CrearSubastaDTO dto,
+            @RequestParam Long vendedorId) {
+
+        return ResponseEntity.ok(subastaService.crearSubasta(dto, vendedorId));
+    }
+
+    @PostMapping("/cerrar-vencidas")
+    public ResponseEntity<String> cerrarSubastas() {
+        int cantidad = subastaService.cerrarSubastasVencidas();
+        return ResponseEntity.ok("Se cerraron " + cantidad + " subastas.");
+    }
 }
