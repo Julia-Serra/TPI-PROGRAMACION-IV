@@ -9,7 +9,6 @@
 
 <header>
     <div class="logo">Alto Valor</div>
-
     <nav>
         <a href="subastas.html">Volver</a>
         <a href="perfil.html">Perfil</a>
@@ -22,14 +21,23 @@
     <p id="descripcion"></p>
 
     <h2>Precio actual: <span id="precio"></span></h2>
-    <p>Finaliza: <span id="fechaFinDetalle"></span></p>
+
+    <p>Estado: <span id="estadoSubasta"></span></p>
+    <p>Inicio: <span id="fechaInicioDetalle"></span></p>
+    <p>Cierre: <span id="fechaFinDetalle"></span></p>
 </section>
 
 <section>
-    <h2>Pujar</h2>
+    <h2>Realizar puja</h2>
 
     <div style="text-align:center;">
-        <input type="number" id="monto" placeholder="Tu oferta" />
+        <input
+                type="number"
+                id="monto"
+                placeholder="Tu oferta"
+                min="0.01"
+                step="0.01"
+        >
 
         <button class="btn-principal" onclick="pujar()">
             Enviar puja

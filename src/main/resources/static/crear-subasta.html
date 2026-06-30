@@ -1,10 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Crear Subasta</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<header>
+    <div class="logo">Alto Valor</div>
+    <nav>
+        <a href="subastas.html">Subastas</a>
+        <a href="perfil.html">Perfil</a>
+        <a href="#" onclick="logout()">Cerrar Sesión</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <h1>Crear subasta</h1>
+    <p>Solo los usuarios vendedores pueden publicar productos y crear subastas.</p>
+
+    <form id="crearSubastaForm" class="formulario">
+
+        <input
+                type="text"
+                id="tituloSubasta"
+                placeholder="Título del producto"
+                required
+        >
+
+        <textarea
+                id="descripcionSubasta"
+                placeholder="Descripción del producto"
+                required
+        ></textarea>
+
+        <input
+                type="number"
+                id="precioInicial"
+                placeholder="Precio base"
+                min="0.01"
+                step="0.01"
+                required
+        >
+
+        <input
+                type="number"
+                id="incrementoMinimo"
+                placeholder="Incremento mínimo de puja"
+                min="0.01"
+                step="0.01"
+                required
+        >
+
+        <label for="fechaInicio">Fecha y hora de inicio</label>
+        <input
+                type="datetime-local"
+                id="fechaInicio"
+                required
+        >
+
+        <label for="fechaFin">Fecha y hora de cierre</label>
+        <input
+                type="datetime-local"
+                id="fechaFin"
+                required
+        >
+
+        <button class="btn-principal" type="submit">
+            Crear subasta
+        </button>
+    </form>
+</section>
+
+<script src="app.js"></script>
 </body>
 </html>

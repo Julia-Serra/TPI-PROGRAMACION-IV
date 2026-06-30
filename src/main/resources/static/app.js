@@ -33,6 +33,18 @@ function requireLogin() {
     return true;
 }
 
+async function leerError(res, fallback) {
+    const text = await res.text();
+    if (!text) return fallback;
+
+    try {
+        const json = JSON.parse(text);
+        return json.message || json.error || fallback;
+    } catch {
+        return text;
+    }
+}
+
 async function apiFetch(url, options = {}) {
     const res = await fetch(url, options);
 
@@ -52,23 +64,17 @@ async function getUsuarioActual() {
         headers: authHeaders()
     });
 
-    if (!res.ok) throw new Error(await leerError(res, "No se pudo obtener el usuario actual"));
+    if (!res.ok) {
+        throw new Error(await leerError(res, "No se pudo obtener el usuario actual"));
+    }
 
     const usuario = await res.json();
     localStorage.setItem("usuario", JSON.stringify(usuario));
     return usuario;
 }
 
-async function leerError(res, fallback) {
-    const text = await res.text();
-    if (!text) return fallback;
-
-    try {
-        const json = JSON.parse(text);
-        return json.message || json.error || fallback;
-    } catch {
-        return text;
-    }
+function tieneRol(usuario, rol) {
+    return usuario.roles && usuario.roles.includes(rol);
 }
 
 function formatearMoneda(valor) {
@@ -81,6 +87,7 @@ function formatearMoneda(valor) {
 
 function formatearFecha(fecha) {
     if (!fecha) return "Sin fecha";
+
     return new Date(fecha).toLocaleString("es-AR", {
         day: "2-digit",
         month: "2-digit",
@@ -125,6 +132,7 @@ async function login(e) {
         }
 
         const token = await res.text();
+
         setToken(token);
         localStorage.removeItem("usuario");
 
@@ -140,8 +148,7 @@ async function register(e) {
     const dto = {
         nombre: document.getElementById("nombre").value.trim(),
         email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value,
-        rol: document.getElementById("rol").value
+        password: document.getElementById("password").value
     };
 
     try {
@@ -174,21 +181,25 @@ async function cargarSubastas() {
             headers: authHeaders()
         });
 
-        if (!res.ok) throw new Error(await leerError(res, "Error cargando subastas"));
+        if (!res.ok) {
+            throw new Error(await leerError(res, "Error cargando subastas"));
+        }
 
         const data = await res.json();
 
         if (!data.length) {
-            contenedor.innerHTML = `<p class="mensaje">No hay subastas activas por el momento.</p>`;
+            contenedor.innerHTML = `<p class="mensaje">No hay subastas disponibles por el momento.</p>`;
             return;
         }
 
         contenedor.innerHTML = data.map(s => `
             <div class="card">
-                <h3>${s.titulo}</h3>
-                <p>${s.descripcion}</p>
-                <p><strong>${formatearMoneda(s.precioActual)}</strong></p>
-                <p>Finaliza: ${formatearFecha(s.fechaFin)}</p>
+                <h3>${s.producto?.titulo || s.titulo || "Subasta sin título"}</h3>
+                <p>${s.producto?.descripcion || s.descripcion || ""}</p>
+                <p><strong>${formatearMoneda(s.precioActual || s.precioBase)}</strong></p>
+                <p>Estado: ${s.estado}</p>
+                <p>Inicio: ${formatearFecha(s.fechaInicio)}</p>
+                <p>Cierre: ${formatearFecha(s.fechaCierre)}</p>
                 <button class="btn-principal" onclick="verDetalle(${s.id})">Ver detalle</button>
             </div>
         `).join("");
@@ -204,21 +215,37 @@ function verDetalle(id) {
 
 async function crearSubasta(e) {
     e.preventDefault();
+
     if (!requireLogin()) return;
 
     try {
         const usuario = await getUsuarioActual();
 
-        if (usuario.rol !== "VENDEDOR") {
-            alert("Solo los usuarios vendedores pueden crear subastas.");
+        if (!tieneRol(usuario, "VENDEDOR") && !tieneRol(usuario, "ADMIN")) {
+            alert("Solo los vendedores pueden crear subastas.");
+            return;
+        }
+
+        const fechaInicio = document.getElementById("fechaInicio").value;
+        const fechaCierre = document.getElementById("fechaFin").value;
+
+        if (!fechaInicio || !fechaCierre) {
+            alert("Debés indicar fecha de inicio y fecha de cierre.");
+            return;
+        }
+
+        if (new Date(fechaCierre) <= new Date(fechaInicio)) {
+            alert("La fecha de cierre debe ser posterior a la fecha de inicio.");
             return;
         }
 
         const dto = {
             titulo: document.getElementById("tituloSubasta").value.trim(),
             descripcion: document.getElementById("descripcionSubasta").value.trim(),
-            precioInicial: Number(document.getElementById("precioInicial").value),
-            fechaFin: document.getElementById("fechaFin").value
+            precioBase: Number(document.getElementById("precioInicial").value),
+            incrementoMinimo: Number(document.getElementById("incrementoMinimo").value),
+            fechaInicio: fechaInicio,
+            fechaCierre: fechaCierre
         };
 
         const res = await apiFetch(`${API_URL}/subastas?vendedorId=${usuario.id}`, {
@@ -227,7 +254,9 @@ async function crearSubasta(e) {
             body: JSON.stringify(dto)
         });
 
-        if (!res.ok) throw new Error(await leerError(res, "No se pudo crear la subasta"));
+        if (!res.ok) {
+            throw new Error(await leerError(res, "No se pudo crear la subasta"));
+        }
 
         alert("Subasta creada correctamente");
         window.location.href = "subastas.html";
@@ -251,16 +280,29 @@ async function cargarDetalle() {
             headers: authHeaders()
         });
 
-        if (!res.ok) throw new Error(await leerError(res, "Error cargando subasta"));
+        if (!res.ok) {
+            throw new Error(await leerError(res, "Error cargando subasta"));
+        }
 
         const s = await res.json();
 
-        document.getElementById("titulo").innerText = s.titulo;
-        document.getElementById("descripcion").innerText = s.descripcion;
-        document.getElementById("precio").innerText = formatearMoneda(s.precioActual);
+        document.getElementById("titulo").innerText =
+            s.producto?.titulo || s.titulo || "Subasta sin título";
 
-        const fechaFin = document.getElementById("fechaFinDetalle");
-        if (fechaFin) fechaFin.innerText = formatearFecha(s.fechaFin);
+        document.getElementById("descripcion").innerText =
+            s.producto?.descripcion || s.descripcion || "";
+
+        document.getElementById("precio").innerText =
+            formatearMoneda(s.precioActual || s.precioBase);
+
+        const estado = document.getElementById("estadoSubasta");
+        if (estado) estado.innerText = s.estado;
+
+        const fechaInicio = document.getElementById("fechaInicioDetalle");
+        if (fechaInicio) fechaInicio.innerText = formatearFecha(s.fechaInicio);
+
+        const fechaCierre = document.getElementById("fechaFinDetalle");
+        if (fechaCierre) fechaCierre.innerText = formatearFecha(s.fechaCierre);
 
         await cargarPujas(id);
     } catch (error) {
@@ -282,6 +324,12 @@ async function pujar() {
 
     try {
         const usuario = await getUsuarioActual();
+
+        if (!tieneRol(usuario, "COMPRADOR") && !tieneRol(usuario, "ADMIN")) {
+            alert("No tenés permiso para realizar pujas.");
+            return;
+        }
+
         const dto = { monto };
 
         const res = await apiFetch(`${API_URL}/pujas?subastaId=${id}&compradorId=${usuario.id}`, {
@@ -290,10 +338,13 @@ async function pujar() {
             body: JSON.stringify(dto)
         });
 
-        if (!res.ok) throw new Error(await leerError(res, "Error al pujar"));
+        if (!res.ok) {
+            throw new Error(await leerError(res, "Error al pujar"));
+        }
 
-        alert("Puja realizada ✔");
+        alert("Puja realizada correctamente");
         document.getElementById("monto").value = "";
+
         await cargarDetalle();
     } catch (error) {
         alert(error.message || "Error al pujar");
@@ -302,6 +353,9 @@ async function pujar() {
 
 async function cargarPujas(id) {
     const contenedor = document.getElementById("listaPujas");
+
+    if (!contenedor) return;
+
     contenedor.innerHTML = `<p class="mensaje">Cargando pujas...</p>`;
 
     try {
@@ -309,7 +363,9 @@ async function cargarPujas(id) {
             headers: authHeaders()
         });
 
-        if (!res.ok) throw new Error(await leerError(res, "No se pudieron cargar las pujas"));
+        if (!res.ok) {
+            throw new Error(await leerError(res, "No se pudieron cargar las pujas"));
+        }
 
         const pujas = await res.json();
 
@@ -321,7 +377,7 @@ async function cargarPujas(id) {
         contenedor.innerHTML = pujas.map(p => `
             <div class="card">
                 <h3>${formatearMoneda(p.monto)}</h3>
-                <p>Usuario: ${p.comprador?.nombre || "Anónimo"}</p>
+                <p>Usuario: ${p.comprador?.nombre || p.oferente || "Anónimo"}</p>
                 <p>Fecha: ${formatearFecha(p.fechaHora)}</p>
             </div>
         `).join("");
@@ -335,9 +391,10 @@ async function cargarPerfil() {
 
     try {
         const usuario = await getUsuarioActual();
+
         document.getElementById("perfilNombre").innerText = usuario.nombre;
         document.getElementById("perfilEmail").innerText = usuario.email;
-        document.getElementById("perfilRol").innerText = usuario.rol;
+        document.getElementById("perfilRol").innerText = usuario.roles?.join(", ") || "Sin roles";
     } catch (error) {
         alert(error.message || "Error cargando perfil");
         logout();
