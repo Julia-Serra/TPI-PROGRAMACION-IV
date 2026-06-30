@@ -3,10 +3,13 @@ package com.subastas.service;
 import com.subastas.dto.LoginDTO;
 import com.subastas.dto.UsuarioRegistroDTO;
 import com.subastas.entity.Usuario;
+import com.subastas.enums.RolUsuario;
 import com.subastas.repository.UsuarioRepository;
 import com.subastas.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Set;
 
 @Service
 public class AuthService {
@@ -33,7 +36,7 @@ public class AuthService {
                 .nombre(dto.nombre())
                 .email(dto.email())
                 .password(passwordEncoder.encode(dto.password()))
-                .rol(dto.rol())
+                .roles(Set.of(RolUsuario.COMPRADOR))
                 .build();
 
         usuarioRepository.save(usuario);

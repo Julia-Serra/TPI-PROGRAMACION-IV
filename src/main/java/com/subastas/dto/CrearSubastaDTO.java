@@ -10,19 +10,21 @@ import java.time.LocalDateTime;
 
 public record CrearSubastaDTO(
 
-        @NotBlank(message = "El título es obligatorio")
-        String titulo,
+        @NotNull
+        Long productoId,
 
-        @NotBlank(message = "La descripción es obligatoria")
-        String descripcion,
+        @NotNull
+        @DecimalMin("0.01")
+        BigDecimal precioBase,
 
-        @NotNull(message = "El precio inicial es obligatorio")
-        @DecimalMin(value = "0.01", message = "El precio debe ser mayor a cero")
-        BigDecimal precioInicial,
+        @NotNull
+        LocalDateTime fechaInicio,
 
-        @NotNull(message = "La fecha de fin es obligatoria")
-        @Future(message = "La fecha de fin debe ser futura")
-        LocalDateTime fechaFin
+        @NotNull
+        LocalDateTime fechaCierre,
 
-) {
-}
+        @NotNull
+        @DecimalMin("0.01")
+        BigDecimal incrementoMinimo
+
+) {}

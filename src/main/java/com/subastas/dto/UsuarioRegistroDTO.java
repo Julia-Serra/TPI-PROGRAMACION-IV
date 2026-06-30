@@ -15,10 +15,6 @@ public record UsuarioRegistroDTO(
         String email,
 
         @NotBlank(message = "La contraseña es obligatoria")
-        String password,
-
-        @NotNull(message = "El rol es obligatorio")
-        RolUsuario rol
-
+        String password
 ) {
 }
