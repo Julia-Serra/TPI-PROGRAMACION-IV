@@ -14,6 +14,7 @@ import com.subastas.repository.UsuarioRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.subastas.dto.CancelarSubastaDTO;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -241,6 +242,57 @@ public class SubastaService {
         subastaRepository.saveAll(vencidas);
 
         return vencidas.size();
+    }
+
+    @Transactional
+    public Subasta cancelarSubasta(Long subastaId, Long usuarioId, CancelarSubastaDTO dto) {
+        Subasta subasta = subastaRepository.findById(subastaId)
+            .orElseThrow(() -> new IllegalArgumentException("No existe la subasta indicada"));
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+            .orElseThrow(() -> new IllegalArgumentException("No existe el usuario indicado"));
+
+        boolean esVendedor = subasta.getVendedor().getId().equals(usuario.getId());
+        boolean esAdmin = usuario.getRoles() != null && usuario.getRoles().contains(RolUsuario.ADMIN);
+
+        if (!esVendedor && !esAdmin) {
+            throw new IllegalArgumentException("No tenés permiso para cancelar esta subasta");
+        }
+
+        if (subasta.getEstado() == EstadoSubasta.CANCELADA
+                || subasta.getEstado() == EstadoSubasta.FINALIZADA
+                || subasta.getEstado() == EstadoSubasta.ADJUDICADA
+                || subasta.getEstado() == EstadoSubasta.EN_DISPUTA) {
+            throw new IllegalArgumentException("No se puede cancelar una subasta en estado " + subasta.getEstado());
+        }
+
+        boolean tienePujas = pujaRepository.existsBySubastaId(subasta.getId());
+
+        if (tienePujas && !esAdmin) {
+            throw new IllegalArgumentException("Solo un administrador puede cancelar una subasta con pujas");
+        }
+
+        EstadoSubasta estadoAnterior = subasta.getEstado();
+
+        subasta.setEstado(EstadoSubasta.CANCELADA);
+
+        Subasta subastaGuardada = subastaRepository.save(subasta);
+
+        historialEstadoSubastaService.registrarCambio(
+                subastaGuardada,
+                estadoAnterior,
+                EstadoSubasta.CANCELADA,
+                usuario,
+                dto.motivo()
+        );
+
+        notificacionService.crearNotificacion(
+                subasta.getVendedor(),
+                "Subasta cancelada",
+                "La subasta fue cancelada. Motivo: " + dto.motivo()
+        );
+
+        return subastaGuardada;
     }
 
     @Scheduled(fixedRate = 60000)
