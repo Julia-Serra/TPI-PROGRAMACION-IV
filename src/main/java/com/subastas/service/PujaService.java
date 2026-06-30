@@ -57,7 +57,7 @@ public class PujaService {
             throw new IllegalArgumentException("El usuario está bloqueado y no puede realizar pujas");
         }
 
-        if (comprador.getRoles() == null || !comprador.getRoles().contains(RolUsuario.USER)) {
+        if (comprador.getRoles() == null || !comprador.getRoles().contains(RolUsuario.COMPRADOR)) {
             throw new IllegalArgumentException("El usuario no tiene permiso para realizar pujas");
         }
 
@@ -69,7 +69,7 @@ public class PujaService {
             throw new IllegalArgumentException("La subasta no está activa");
         }
 
-        if (!subasta.getFechaFin().isAfter(ahora)) {
+        if (!subasta.getFechaCierre().isAfter(ahora)) {
             finalizarOAdjudicar(subasta, ahora);
             throw new IllegalArgumentException("La subasta ya finalizó");
         }
@@ -80,7 +80,7 @@ public class PujaService {
         BigDecimal montoMinimo;
 
         if (ultimaPuja == null) {
-            montoMinimo = subasta.getPrecioInicial();
+            montoMinimo = subasta.getPrecioBase();
         } else {
             montoMinimo = ultimaPuja.getMonto().add(subasta.getIncrementoMinimo());
         }
@@ -124,10 +124,10 @@ public class PujaService {
     private void extenderSiPujaEnUltimosCincoMinutos(Subasta subasta, LocalDateTime ahora) {
 
         LocalDateTime inicioVentanaExtension =
-                subasta.getFechaFin().minus(MINUTOS_EXTENSION, ChronoUnit.MINUTES);
+                subasta.getFechaCierre().minus(MINUTOS_EXTENSION, ChronoUnit.MINUTES);
 
         if (!ahora.isBefore(inicioVentanaExtension)) {
-            subasta.setFechaFin(subasta.getFechaFin().plusMinutes(MINUTOS_EXTENSION));
+            subasta.setFechaCierre(subasta.getFechaCierre().plusMinutes(MINUTOS_EXTENSION));
         }
     }
 }

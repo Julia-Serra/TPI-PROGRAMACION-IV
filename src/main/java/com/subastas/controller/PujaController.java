@@ -26,13 +26,18 @@ public class PujaController {
     public ResponseEntity<Puja> realizarPuja(
             @RequestParam Long subastaId,
             @RequestParam Long compradorId,
-            @Valid @RequestBody PujaDTO dto) {
-
+            @Valid @RequestBody PujaDTO dto
+    ) {
         return ResponseEntity.ok(pujaService.realizarPuja(subastaId, compradorId, dto));
     }
 
     @GetMapping("/subasta/{subastaId}")
     public ResponseEntity<List<Puja>> listarPorSubasta(@PathVariable Long subastaId) {
         return ResponseEntity.ok(pujaRepository.findBySubastaIdOrderByMontoDesc(subastaId));
+    }
+
+    @GetMapping("/usuario/{compradorId}")
+    public ResponseEntity<List<Puja>> listarPorComprador(@PathVariable Long compradorId) {
+        return ResponseEntity.ok(pujaRepository.findByCompradorIdOrderByFechaHoraDesc(compradorId));
     }
 }

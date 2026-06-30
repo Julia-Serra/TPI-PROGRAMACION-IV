@@ -20,35 +20,7 @@ public class Subasta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String titulo;
-
-    @Column(length = 1000)
-    private String descripcion;
-
-    @Column(nullable = false)
-    private BigDecimal precioInicial;
-
-    @Column(nullable = false)
-    private BigDecimal precioActual;
-
-    @Column(nullable = false)
-    private LocalDateTime fechaInicio;
-
-    @Column(nullable = false)
-    private LocalDateTime fechaFin;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private EstadoSubasta estado;
-
-    @ManyToOne
-    @JoinColumn(name = "vendedor_id", nullable = false)
-    private Usuario vendedor;
-
-    @Version
-    private Long version;
-
-    ManyToOne(optional = false)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "producto_id")
     private Producto producto;
 
@@ -61,8 +33,19 @@ public class Subasta {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal incrementoMinimo;
 
+    @Column(nullable = false)
     private LocalDateTime fechaInicio;
+
+    @Column(nullable = false)
     private LocalDateTime fechaCierre;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoSubasta estado;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "vendedor_id")
+    private Usuario vendedor;
 
     @ManyToOne
     @JoinColumn(name = "ganador_id")
@@ -72,4 +55,7 @@ public class Subasta {
     private BigDecimal precioFinal;
 
     private LocalDateTime fechaAdjudicacion;
+
+    @Version
+    private Long version;
 }
