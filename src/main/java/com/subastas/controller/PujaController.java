@@ -2,10 +2,12 @@ package com.subastas.controller;
 
 import com.subastas.dto.PujaDTO;
 import com.subastas.entity.Puja;
+import com.subastas.entity.Usuario;
 import com.subastas.repository.PujaRepository;
 import com.subastas.service.PujaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
