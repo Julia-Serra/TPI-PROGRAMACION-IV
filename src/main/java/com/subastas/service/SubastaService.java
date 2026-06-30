@@ -29,19 +29,22 @@ public class SubastaService {
     private final ProductoRepository productoRepository;
     private final PujaRepository pujaRepository;
     private final NotificacionService notificacionService;
+    private final HistorialEstadoSubastaService historialEstadoSubastaService;
 
     public SubastaService(
             SubastaRepository subastaRepository,
             UsuarioRepository usuarioRepository,
             ProductoRepository productoRepository,
             PujaRepository pujaRepository,
-            NotificacionService notificacionService
+            NotificacionService notificacionService,
+            HistorialEstadoSubastaService historialEstadoSubastaService
     ) {
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
         this.pujaRepository = pujaRepository;
         this.notificacionService = notificacionService;
+        this.historialEstadoSubastaService = historialEstadoSubastaService;
     }
 
     @Transactional
@@ -99,9 +102,21 @@ public class SubastaService {
             throw new IllegalArgumentException("Solo se puede publicar una subasta en borrador");
         }
 
+        EstadoSubasta estadoAnterior = subasta.getEstado();
+
         subasta.setEstado(EstadoSubasta.PUBLICADA);
 
-        return subastaRepository.save(subasta);
+        Subasta subastaGuardada = subastaRepository.save(subasta);
+
+        historialEstadoSubastaService.registrarCambio(
+                subastaGuardada,
+                estadoAnterior,
+                EstadoSubasta.PUBLICADA,
+                usuario,
+                "Publicación de la subasta"
+        );
+
+        return subastaGuardada;
     }
 
     @Transactional
@@ -138,7 +153,20 @@ public class SubastaService {
                 EstadoSubasta.PUBLICADA
         );
 
-        publicadas.forEach(subasta -> subasta.setEstado(EstadoSubasta.ACTIVA));
+        for (Subasta subasta : publicadas) {
+            EstadoSubasta estadoAnterior = subasta.getEstado();
+
+            subasta.setEstado(EstadoSubasta.ACTIVA);
+
+            historialEstadoSubastaService.registrarCambio(
+                    subasta,
+                    estadoAnterior,
+                    EstadoSubasta.ACTIVA,
+                    subasta.getVendedor(),
+                    "Activación automática de la subasta"
+            );
+        }
+
         subastaRepository.saveAll(publicadas);
 
         return publicadas.size();
@@ -155,6 +183,8 @@ public class SubastaService {
 
         for (Subasta subasta : vencidas) {
             boolean tienePujas = pujaRepository.existsBySubastaId(subasta.getId());
+
+            EstadoSubasta estadoAnterior = subasta.getEstado();
 
             if (tienePujas) {
 
@@ -180,6 +210,14 @@ public class SubastaService {
                         "Tu subasta fue adjudicada correctamente."
                 );
 
+                historialEstadoSubastaService.registrarCambio(
+                        subasta,
+                        estadoAnterior,
+                        EstadoSubasta.ADJUDICADA,
+                        subasta.getVendedor(),
+                        "Adjudicación automática de la subasta"
+                );
+
             } else {
 
                 subasta.setEstado(EstadoSubasta.FINALIZADA);
@@ -188,6 +226,14 @@ public class SubastaService {
                         subasta.getVendedor(),
                         "Subasta finalizada",
                         "La subasta finalizó sin recibir ofertas."
+                );
+
+                historialEstadoSubastaService.registrarCambio(
+                        subasta,
+                        estadoAnterior,
+                        EstadoSubasta.FINALIZADA,
+                        subasta.getVendedor(),
+                        "Finalización automática sin ofertas"
                 );
             }
         }

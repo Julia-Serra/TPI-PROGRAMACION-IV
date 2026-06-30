@@ -23,15 +23,18 @@ public class DisputaService {
     private final DisputaRepository disputaRepository;
     private final SubastaRepository subastaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final HistorialEstadoSubastaService historialEstadoSubastaService;
 
     public DisputaService(
             DisputaRepository disputaRepository,
             SubastaRepository subastaRepository,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            HistorialEstadoSubastaService historialEstadoSubastaService
     ) {
         this.disputaRepository = disputaRepository;
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.historialEstadoSubastaService = historialEstadoSubastaService;
     }
 
     @Transactional
@@ -64,8 +67,19 @@ public class DisputaService {
                 .fechaCreacion(ahora)
                 .build();
 
+       EstadoSubasta estadoAnterior = subasta.getEstado();
+
         subasta.setEstado(EstadoSubasta.EN_DISPUTA);
-        subastaRepository.save(subasta);
+
+        Subasta subastaGuardada = subastaRepository.save(subasta);
+
+        historialEstadoSubastaService.registrarCambio(
+                subastaGuardada,
+                estadoAnterior,
+                EstadoSubasta.EN_DISPUTA,
+                usuario,
+                dto.motivo()
+        );
 
         return disputaRepository.save(disputa);
     }
@@ -98,13 +112,23 @@ public class DisputaService {
 
         LocalDateTime ahora = LocalDateTime.now(Clock.systemUTC());
 
+        EstadoSubasta estadoAnterior = subasta.getEstado();
+
         subasta.setEstado(estadoFinal);
 
         disputa.setResueltaPor(admin);
         disputa.setFechaResolucion(ahora);
         disputa.setResolucionAdmin(dto.resolucion());
 
-        subastaRepository.save(subasta);
+        Subasta subastaGuardada = subastaRepository.save(subasta);
+
+        historialEstadoSubastaService.registrarCambio(
+                subastaGuardada,
+                estadoAnterior,
+                estadoFinal,
+                admin,
+                dto.resolucion()
+        );
 
         return disputaRepository.save(disputa);
     }
