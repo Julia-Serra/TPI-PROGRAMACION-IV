@@ -13,13 +13,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        return http
+        http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.disable())
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .build();
+
+                        // 🔓 API PUBLICA
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/usuarios/**").permitAll()
+                        .requestMatchers("/subastas/**").permitAll()
+
+                        // 🌐 FRONT
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/login.html",
+                                "/registro.html",
+                                "/subastas.html",
+                                "/detalle.html",
+                                "/js/**",
+                                "/css/**",
+                                "/img/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // 🔥 DEBUG TEMPORAL (IMPORTANTE)
+                        .anyRequest().permitAll()
+                );
+
+        return http.build();
     }
 
     @Bean

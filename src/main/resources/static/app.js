@@ -1,0 +1,345 @@
+const API_URL = window.location.origin && window.location.origin !== "null"
+    ? window.location.origin
+    : "http://localhost:8080";
+
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function setToken(token) {
+    localStorage.setItem("token", token);
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    localStorage.removeItem("subastaId");
+    window.location.href = "login.html";
+}
+
+function authHeaders(extraHeaders = {}) {
+    const token = getToken();
+    return {
+        ...extraHeaders,
+        ...(token ? { Authorization: "Bearer " + token } : {})
+    };
+}
+
+function requireLogin() {
+    if (!getToken()) {
+        window.location.href = "login.html";
+        return false;
+    }
+    return true;
+}
+
+async function apiFetch(url, options = {}) {
+    const res = await fetch(url, options);
+
+    if (res.status === 401 || res.status === 403) {
+        logout();
+        throw new Error("Sesión vencida. Volvé a iniciar sesión.");
+    }
+
+    return res;
+}
+
+async function getUsuarioActual() {
+    const guardado = localStorage.getItem("usuario");
+    if (guardado) return JSON.parse(guardado);
+
+    const res = await apiFetch(`${API_URL}/usuarios/me`, {
+        headers: authHeaders()
+    });
+
+    if (!res.ok) throw new Error(await leerError(res, "No se pudo obtener el usuario actual"));
+
+    const usuario = await res.json();
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+    return usuario;
+}
+
+async function leerError(res, fallback) {
+    const text = await res.text();
+    if (!text) return fallback;
+
+    try {
+        const json = JSON.parse(text);
+        return json.message || json.error || fallback;
+    } catch {
+        return text;
+    }
+}
+
+function formatearMoneda(valor) {
+    return Number(valor || 0).toLocaleString("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        maximumFractionDigits: 0
+    });
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return "Sin fecha";
+    return new Date(fecha).toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const loginForm = document.getElementById("loginForm");
+    const registroForm = document.getElementById("registroForm");
+    const crearSubastaForm = document.getElementById("crearSubastaForm");
+
+    if (loginForm) loginForm.addEventListener("submit", login);
+    if (registroForm) registroForm.addEventListener("submit", register);
+    if (crearSubastaForm) crearSubastaForm.addEventListener("submit", crearSubasta);
+
+    if (document.getElementById("contenedorSubastas")) cargarSubastas();
+    if (document.getElementById("titulo")) cargarDetalle();
+    if (document.getElementById("perfilNombre")) cargarPerfil();
+});
+
+async function login(e) {
+    e.preventDefault();
+
+    const dto = {
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dto)
+        });
+
+        if (!res.ok) {
+            alert(await leerError(res, "Credenciales incorrectas"));
+            return;
+        }
+
+        const token = await res.text();
+        setToken(token);
+        localStorage.removeItem("usuario");
+
+        window.location.href = "subastas.html";
+    } catch (error) {
+        alert(error.message || "Error al iniciar sesión");
+    }
+}
+
+async function register(e) {
+    e.preventDefault();
+
+    const dto = {
+        nombre: document.getElementById("nombre").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+        rol: document.getElementById("rol").value
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dto)
+        });
+
+        if (!res.ok) {
+            alert(await leerError(res, "Error al registrar"));
+            return;
+        }
+
+        alert("Registro exitoso");
+        window.location.href = "login.html";
+    } catch (error) {
+        alert(error.message || "Error al registrar");
+    }
+}
+
+async function cargarSubastas() {
+    if (!requireLogin()) return;
+
+    const contenedor = document.getElementById("contenedorSubastas");
+    contenedor.innerHTML = `<p class="mensaje">Cargando subastas...</p>`;
+
+    try {
+        const res = await apiFetch(`${API_URL}/subastas`, {
+            headers: authHeaders()
+        });
+
+        if (!res.ok) throw new Error(await leerError(res, "Error cargando subastas"));
+
+        const data = await res.json();
+
+        if (!data.length) {
+            contenedor.innerHTML = `<p class="mensaje">No hay subastas activas por el momento.</p>`;
+            return;
+        }
+
+        contenedor.innerHTML = data.map(s => `
+            <div class="card">
+                <h3>${s.titulo}</h3>
+                <p>${s.descripcion}</p>
+                <p><strong>${formatearMoneda(s.precioActual)}</strong></p>
+                <p>Finaliza: ${formatearFecha(s.fechaFin)}</p>
+                <button class="btn-principal" onclick="verDetalle(${s.id})">Ver detalle</button>
+            </div>
+        `).join("");
+    } catch (error) {
+        contenedor.innerHTML = `<p class="mensaje error">${error.message}</p>`;
+    }
+}
+
+function verDetalle(id) {
+    localStorage.setItem("subastaId", id);
+    window.location.href = "detalle.html";
+}
+
+async function crearSubasta(e) {
+    e.preventDefault();
+    if (!requireLogin()) return;
+
+    try {
+        const usuario = await getUsuarioActual();
+
+        if (usuario.rol !== "VENDEDOR") {
+            alert("Solo los usuarios vendedores pueden crear subastas.");
+            return;
+        }
+
+        const dto = {
+            titulo: document.getElementById("tituloSubasta").value.trim(),
+            descripcion: document.getElementById("descripcionSubasta").value.trim(),
+            precioInicial: Number(document.getElementById("precioInicial").value),
+            fechaFin: document.getElementById("fechaFin").value
+        };
+
+        const res = await apiFetch(`${API_URL}/subastas?vendedorId=${usuario.id}`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(dto)
+        });
+
+        if (!res.ok) throw new Error(await leerError(res, "No se pudo crear la subasta"));
+
+        alert("Subasta creada correctamente");
+        window.location.href = "subastas.html";
+    } catch (error) {
+        alert(error.message || "Error al crear la subasta");
+    }
+}
+
+async function cargarDetalle() {
+    if (!requireLogin()) return;
+
+    const id = localStorage.getItem("subastaId");
+
+    if (!id) {
+        window.location.href = "subastas.html";
+        return;
+    }
+
+    try {
+        const res = await apiFetch(`${API_URL}/subastas/${id}`, {
+            headers: authHeaders()
+        });
+
+        if (!res.ok) throw new Error(await leerError(res, "Error cargando subasta"));
+
+        const s = await res.json();
+
+        document.getElementById("titulo").innerText = s.titulo;
+        document.getElementById("descripcion").innerText = s.descripcion;
+        document.getElementById("precio").innerText = formatearMoneda(s.precioActual);
+
+        const fechaFin = document.getElementById("fechaFinDetalle");
+        if (fechaFin) fechaFin.innerText = formatearFecha(s.fechaFin);
+
+        await cargarPujas(id);
+    } catch (error) {
+        alert(error.message || "Error cargando subasta");
+        window.location.href = "subastas.html";
+    }
+}
+
+async function pujar() {
+    if (!requireLogin()) return;
+
+    const id = localStorage.getItem("subastaId");
+    const monto = Number(document.getElementById("monto").value);
+
+    if (!monto || monto <= 0) {
+        alert("Monto inválido");
+        return;
+    }
+
+    try {
+        const usuario = await getUsuarioActual();
+        const dto = { monto };
+
+        const res = await apiFetch(`${API_URL}/pujas?subastaId=${id}&compradorId=${usuario.id}`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(dto)
+        });
+
+        if (!res.ok) throw new Error(await leerError(res, "Error al pujar"));
+
+        alert("Puja realizada ✔");
+        document.getElementById("monto").value = "";
+        await cargarDetalle();
+    } catch (error) {
+        alert(error.message || "Error al pujar");
+    }
+}
+
+async function cargarPujas(id) {
+    const contenedor = document.getElementById("listaPujas");
+    contenedor.innerHTML = `<p class="mensaje">Cargando pujas...</p>`;
+
+    try {
+        const res = await apiFetch(`${API_URL}/pujas/subasta/${id}`, {
+            headers: authHeaders()
+        });
+
+        if (!res.ok) throw new Error(await leerError(res, "No se pudieron cargar las pujas"));
+
+        const pujas = await res.json();
+
+        if (!pujas.length) {
+            contenedor.innerHTML = `<p class="mensaje">Todavía no hay pujas.</p>`;
+            return;
+        }
+
+        contenedor.innerHTML = pujas.map(p => `
+            <div class="card">
+                <h3>${formatearMoneda(p.monto)}</h3>
+                <p>Usuario: ${p.comprador?.nombre || "Anónimo"}</p>
+                <p>Fecha: ${formatearFecha(p.fechaHora)}</p>
+            </div>
+        `).join("");
+    } catch (error) {
+        contenedor.innerHTML = `<p class="mensaje error">${error.message}</p>`;
+    }
+}
+
+async function cargarPerfil() {
+    if (!requireLogin()) return;
+
+    try {
+        const usuario = await getUsuarioActual();
+        document.getElementById("perfilNombre").innerText = usuario.nombre;
+        document.getElementById("perfilEmail").innerText = usuario.email;
+        document.getElementById("perfilRol").innerText = usuario.rol;
+    } catch (error) {
+        alert(error.message || "Error cargando perfil");
+        logout();
+    }
+}
