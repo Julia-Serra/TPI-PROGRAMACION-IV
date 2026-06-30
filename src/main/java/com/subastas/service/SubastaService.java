@@ -2,6 +2,7 @@ package com.subastas.service;
 
 import com.subastas.dto.CrearSubastaDTO;
 import com.subastas.entity.Producto;
+import com.subastas.entity.Puja;
 import com.subastas.entity.Subasta;
 import com.subastas.entity.Usuario;
 import com.subastas.enums.EstadoSubasta;
@@ -27,17 +28,20 @@ public class SubastaService {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final PujaRepository pujaRepository;
+    private final NotificacionService notificacionService;
 
     public SubastaService(
             SubastaRepository subastaRepository,
             UsuarioRepository usuarioRepository,
             ProductoRepository productoRepository,
-            PujaRepository pujaRepository
+            PujaRepository pujaRepository,
+            NotificacionService notificacionService
     ) {
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
         this.pujaRepository = pujaRepository;
+        this.notificacionService = notificacionService;
     }
 
     @Transactional
@@ -153,11 +157,38 @@ public class SubastaService {
             boolean tienePujas = pujaRepository.existsBySubastaId(subasta.getId());
 
             if (tienePujas) {
+
+                Puja ultimaPuja = pujaRepository
+                        .findTopBySubastaIdOrderByMontoDesc(subasta.getId())
+                        .orElseThrow();
+
+                subasta.setGanador(ultimaPuja.getComprador());
                 subasta.setEstado(EstadoSubasta.ADJUDICADA);
                 subasta.setPrecioFinal(subasta.getPrecioActual());
                 subasta.setFechaAdjudicacion(ahora);
+
+                notificacionService.crearNotificacion(
+                        ultimaPuja.getComprador(),
+                        "¡Ganaste la subasta!",
+                        "Ganaste la subasta del producto: "
+                                + subasta.getProducto().getTitulo()
+                );
+
+                notificacionService.crearNotificacion(
+                        subasta.getVendedor(),
+                        "Subasta finalizada",
+                        "Tu subasta fue adjudicada correctamente."
+                );
+
             } else {
+
                 subasta.setEstado(EstadoSubasta.FINALIZADA);
+
+                notificacionService.crearNotificacion(
+                        subasta.getVendedor(),
+                        "Subasta finalizada",
+                        "La subasta finalizó sin recibir ofertas."
+                );
             }
         }
 
