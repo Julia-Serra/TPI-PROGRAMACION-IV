@@ -109,8 +109,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("contenedorSubastas")) cargarSubastas();
     if (document.getElementById("titulo")) cargarDetalle();
     if (document.getElementById("perfilNombre")) cargarPerfil();
+    configurarMenuPorRol();
 });
 
+async function configurarMenuPorRol() {
+    const link = document.getElementById("linkCrearSubasta");
+
+    if (!link || !getToken()) return;
+
+    const usuario = await getUsuarioActual();
+
+    if (!tieneRol(usuario, "VENDEDOR") && !tieneRol(usuario, "ADMIN")) {
+        link.style.display = "none";
+    }
+}
 async function login(e) {
     e.preventDefault();
 
@@ -248,7 +260,7 @@ async function crearSubasta(e) {
             fechaCierre: fechaCierre
         };
 
-        const res = await apiFetch(`${API_URL}/subastas?vendedorId=${usuario.id}`, {
+        const res = await apiFetch(`${API_URL}/subastas`, {
             method: "POST",
             headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(dto)

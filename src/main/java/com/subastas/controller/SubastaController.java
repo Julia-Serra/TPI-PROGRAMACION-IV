@@ -2,12 +2,13 @@ package com.subastas.controller;
 
 import com.subastas.dto.CrearSubastaDTO;
 import com.subastas.entity.Subasta;
+import com.subastas.entity.Usuario;
 import com.subastas.service.SubastaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.subastas.dto.CancelarSubastaDTO;
-
+import org.springframework.security.core.Authentication;
 import java.util.List;
 
 @RestController
@@ -35,9 +36,10 @@ public class SubastaController {
     @PostMapping
     public ResponseEntity<Subasta> crearSubasta(
             @Valid @RequestBody CrearSubastaDTO dto,
-            @RequestParam Long vendedorId
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(subastaService.crearSubasta(dto, vendedorId));
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        return ResponseEntity.ok(subastaService.crearSubasta(dto, usuario.getId()));
     }
 
     @PostMapping("/{id}/publicar")
