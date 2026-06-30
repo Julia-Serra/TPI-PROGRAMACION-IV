@@ -102,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const registroForm = document.getElementById("registroForm");
     const crearSubastaForm = document.getElementById("crearSubastaForm");
 
+    if (document.getElementById("adminListaUsuarios")) cargarPanelAdmin();
     if (loginForm) loginForm.addEventListener("submit", login);
     if (registroForm) registroForm.addEventListener("submit", register);
     if (crearSubastaForm) crearSubastaForm.addEventListener("submit", crearSubasta);
@@ -116,6 +117,12 @@ async function configurarMenuPorRol() {
     const link = document.getElementById("linkCrearSubasta");
 
     if (!link || !getToken()) return;
+
+    const linkAdmin = document.getElementById("linkAdmin");
+
+    if (linkAdmin && (!tieneRol(usuario, "ADMIN"))) {
+        linkAdmin.style.display = "none";
+    }
 
     const usuario = await getUsuarioActual();
 
@@ -411,4 +418,152 @@ async function cargarPerfil() {
         alert(error.message || "Error cargando perfil");
         logout();
     }
+}
+async function cargarPanelAdmin() {
+    if (!requireLogin()) return;
+
+    const usuario = await getUsuarioActual();
+
+    if (!tieneRol(usuario, "ADMIN")) {
+        alert("No tenés permiso para acceder al panel de administración.");
+        window.location.href = "subastas.html";
+        return;
+    }
+
+    await adminCargarUsuarios();
+    await adminCargarSubastas();
+}
+
+async function adminCargarUsuarios() {
+    const contenedor = document.getElementById("adminListaUsuarios");
+
+    const res = await apiFetch(`${API_URL}/admin/usuarios`, {
+        headers: authHeaders()
+    });
+
+    const usuarios = await res.json();
+
+    contenedor.innerHTML = usuarios.map(u => `
+        <div class="card">
+            <h3>${u.nombre}</h3>
+            <p>Email: ${u.email}</p>
+            <p>Roles: ${u.roles?.join(", ") || "Sin roles"}</p>
+            <p>Estado: ${u.bloqueado ? "Suspendido" : "Activo"}</p>
+        </div>
+    `).join("");
+}
+
+async function adminCargarSubastas() {
+    const contenedor = document.getElementById("adminListaSubastas");
+
+    const res = await apiFetch(`${API_URL}/admin/subastas`, {
+        headers: authHeaders()
+    });
+
+    const subastas = await res.json();
+
+    contenedor.innerHTML = subastas.map(s => `
+        <div class="card">
+            <h3>${s.producto?.titulo || "Subasta sin producto"}</h3>
+            <p>ID: ${s.id}</p>
+            <p>Estado: ${s.estado}</p>
+            <p>Precio actual: ${formatearMoneda(s.precioActual)}</p>
+        </div>
+    `).join("");
+}
+
+async function adminAsignarRoles() {
+    const email = document.getElementById("adminEmailRoles").value.trim();
+
+    const roles = Array.from(document.querySelectorAll(".rolCheck:checked"))
+        .map(check => check.value);
+
+    if (!email || roles.length === 0) {
+        alert("Ingresá email y al menos un rol.");
+        return;
+    }
+
+    const res = await apiFetch(`${API_URL}/admin/usuarios/${encodeURIComponent(email)}/roles`, {
+        method: "PUT",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(roles)
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudieron actualizar los roles"));
+        return;
+    }
+
+    alert("Roles actualizados correctamente");
+    await adminCargarUsuarios();
+}
+
+async function adminSuspenderUsuario() {
+    const email = document.getElementById("adminEmailSuspender").value.trim();
+
+    if (!email) {
+        alert("Ingresá el email del usuario.");
+        return;
+    }
+
+    const res = await apiFetch(`${API_URL}/admin/usuarios/${encodeURIComponent(email)}/suspender`, {
+        method: "PUT",
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo suspender el usuario"));
+        return;
+    }
+
+    alert("Usuario suspendido");
+    await adminCargarUsuarios();
+}
+
+async function adminReactivarUsuario() {
+    const email = document.getElementById("adminEmailSuspender").value.trim();
+
+    if (!email) {
+        alert("Ingresá el email del usuario.");
+        return;
+    }
+
+    const res = await apiFetch(`${API_URL}/admin/usuarios/${encodeURIComponent(email)}/reactivar`, {
+        method: "PUT",
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo reactivar el usuario"));
+        return;
+    }
+
+    alert("Usuario reactivado");
+    await adminCargarUsuarios();
+}
+
+async function adminCancelarSubasta() {
+    const usuario = await getUsuarioActual();
+
+    const id = document.getElementById("adminSubastaId").value;
+    const motivo = document.getElementById("adminMotivoCancelacion").value.trim();
+
+    if (!id || !motivo) {
+        alert("Ingresá ID de subasta y motivo.");
+        return;
+    }
+
+    const res = await apiFetch(`${API_URL}/admin/subastas/${id}/cancelar?adminId=${usuario.id}`, {
+        method: "PUT",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ motivo })
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo cancelar la subasta"));
+        return;
+    }
+
+    alert("Subasta cancelada correctamente");
+    await adminCargarSubastas();
 }

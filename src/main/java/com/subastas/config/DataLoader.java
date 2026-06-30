@@ -89,7 +89,6 @@ public class DataLoader implements CommandLineRunner {
                             .password(passwordEncoder.encode("1234"))
                             .roles(Set.of(RolUsuario.COMPRADOR, RolUsuario.VENDEDOR, RolUsuario.ADMIN))
                             .build();
-
                     System.out.println("✔ Usuario vendedor/admin creado");
 
                     return usuarioRepository.save(vendedor);

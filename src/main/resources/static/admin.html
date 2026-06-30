@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">Alto Valor</div>
+    <nav>
+        <a href="subastas.html">Subastas</a>
+        <a href="perfil.html">Perfil</a>
+        <a href="#" onclick="logout()">Cerrar Sesión</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <h1>Panel de administración</h1>
+    <p>Asignar roles, suspender usuarios y cancelar subastas.</p>
+</section>
+
+<section>
+    <h2>Asignar roles por email</h2>
+
+    <input type="email" id="adminEmailRoles" placeholder="Email del usuario">
+
+    <label>
+        <input type="checkbox" value="COMPRADOR" class="rolCheck"> COMPRADOR
+    </label>
+
+    <label>
+        <input type="checkbox" value="VENDEDOR" class="rolCheck"> VENDEDOR
+    </label>
+
+    <label>
+        <input type="checkbox" value="ADMIN" class="rolCheck"> ADMIN
+    </label>
+
+    <button class="btn-principal" onclick="adminAsignarRoles()">
+        Guardar roles
+    </button>
+</section>
+
+<section>
+    <h2>Suspender o reactivar usuario</h2>
+
+    <input type="email" id="adminEmailSuspender" placeholder="Email del usuario">
+
+    <button class="btn-principal" onclick="adminSuspenderUsuario()">
+        Suspender
+    </button>
+
+    <button class="btn-principal" onclick="adminReactivarUsuario()">
+        Reactivar
+    </button>
+</section>
+
+<section>
+    <h2>Cancelar subasta</h2>
+
+    <input type="number" id="adminSubastaId" placeholder="ID de subasta">
+
+    <textarea id="adminMotivoCancelacion" placeholder="Motivo de cancelación"></textarea>
+
+    <button class="btn-principal" onclick="adminCancelarSubasta()">
+        Cancelar subasta
+    </button>
+</section>
+
+<section>
+    <h2>Usuarios</h2>
+    <div class="cards" id="adminListaUsuarios"></div>
+</section>
+
+<section>
+    <h2>Subastas</h2>
+    <div class="cards" id="adminListaSubastas"></div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

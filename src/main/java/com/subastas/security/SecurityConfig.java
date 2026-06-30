@@ -37,7 +37,6 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(
                                 "/",
                                 "/index.html",
@@ -47,15 +46,20 @@ public class SecurityConfig {
                                 "/crear-subasta.html",
                                 "/detalle.html",
                                 "/perfil.html",
+                                "/admin.html",
                                 "/style.css",
                                 "/app.js",
                                 "/favicon.ico",
                                 "/img/**"
                         ).permitAll()
-
                         .requestMatchers("/auth/**").permitAll()
-
                         .requestMatchers("/usuarios/me").authenticated()
+
+                        .requestMatchers("/admin.html")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/admin/**")
+                        .hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/subastas/**")
                         .hasAnyRole("COMPRADOR", "VENDEDOR", "ADMIN")
