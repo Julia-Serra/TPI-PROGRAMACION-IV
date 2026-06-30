@@ -47,4 +47,29 @@ public class Subasta {
 
     @Version
     private Long version;
+
+    ManyToOne(optional = false)
+    @JoinColumn(name = "producto_id")
+    private Producto producto;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal precioBase;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal precioActual;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal incrementoMinimo;
+
+    private LocalDateTime fechaInicio;
+    private LocalDateTime fechaCierre;
+
+    @ManyToOne
+    @JoinColumn(name = "ganador_id")
+    private Usuario ganador;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal precioFinal;
+
+    private LocalDateTime fechaAdjudicacion;
 }
