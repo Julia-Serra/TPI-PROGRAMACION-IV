@@ -25,12 +25,13 @@ public class PujaController {
     @PostMapping
     public ResponseEntity<Puja> realizarPuja(
             @RequestParam Long subastaId,
-            @RequestParam Long compradorId,
-            @Valid @RequestBody PujaDTO dto) {
+            @Valid @RequestBody PujaDTO dto,
+            Authentication authentication) {
 
-        return ResponseEntity.ok(pujaService.realizarPuja(subastaId, compradorId, dto));
+        Usuario comprador = (Usuario) authentication.getPrincipal();
+        return ResponseEntity.ok(pujaService.realizarPuja(subastaId, comprador, dto));
     }
-
+    
     @GetMapping("/subasta/{subastaId}")
     public ResponseEntity<List<Puja>> listarPorSubasta(@PathVariable Long subastaId) {
         return ResponseEntity.ok(pujaRepository.findBySubastaIdOrderByMontoDesc(subastaId));
