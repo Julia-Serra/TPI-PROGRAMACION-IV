@@ -1,40 +1,57 @@
 package com.subastas.controller;
 
+import org.springframework.security.core.Authentication;
 import com.subastas.entity.Usuario;
+import com.subastas.enums.RolUsuario;
 import com.subastas.repository.UsuarioRepository;
-import com.subastas.security.JwtService;
-import org.springframework.http.HttpStatus;
+import com.subastas.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
-    private final JwtService jwtService;
+    private final UsuarioService usuarioService;
 
-    public UsuarioController(UsuarioRepository usuarioRepository, JwtService jwtService) {
+    public UsuarioController(
+            UsuarioRepository usuarioRepository,
+            UsuarioService usuarioService
+    ) {
         this.usuarioRepository = usuarioRepository;
-        this.jwtService = jwtService;
+        this.usuarioService = usuarioService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Usuario>> listar() {
+        return ResponseEntity.ok(usuarioRepository.findAll());
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Usuario> obtenerUsuarioActual(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token no enviado");
-        }
-
-        String token = authorization.substring(7);
-        String email = jwtService.extractUsername(token);
-
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-
+    public ResponseEntity<Usuario> obtenerUsuarioActual(Authentication authentication) {
+        Usuario usuario = (Usuario) authentication.getPrincipal();
         return ResponseEntity.ok(usuario);
+    }
+
+    @PutMapping("/{id}/bloquear")
+    public ResponseEntity<Usuario> bloquear(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioService.bloquear(id));
+    }
+
+    @PutMapping("/{id}/desbloquear")
+    public ResponseEntity<Usuario> desbloquear(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioService.desbloquear(id));
+    }
+
+    @PutMapping("/{id}/roles")
+    public ResponseEntity<Usuario> actualizarRoles(
+            @PathVariable Long id,
+            @RequestBody Set<RolUsuario> roles
+    ) {
+        return ResponseEntity.ok(usuarioService.actualizarRoles(id, roles));
     }
 }

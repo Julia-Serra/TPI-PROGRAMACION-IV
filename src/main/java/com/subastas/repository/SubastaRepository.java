@@ -29,4 +29,5 @@ public interface SubastaRepository extends JpaRepository<Subasta, Long> {
             LocalDateTime fecha,
             EstadoSubasta estado
     );
+    boolean existsByProductoId(Long productoId);
 }
