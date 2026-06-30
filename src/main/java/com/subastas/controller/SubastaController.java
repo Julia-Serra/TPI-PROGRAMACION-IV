@@ -20,8 +20,8 @@ public class SubastaController {
     }
 
     @GetMapping
-    public List<Subasta> listarActivas() {
-        return subastaService.obtenerSubastasActivas();
+    public List<Subasta> listar() {
+        return subastaService.obtenerSubastasVisibles();
     }
 
     @GetMapping("/{id}")
@@ -34,9 +34,17 @@ public class SubastaController {
     @PostMapping
     public ResponseEntity<Subasta> crearSubasta(
             @Valid @RequestBody CrearSubastaDTO dto,
-            @RequestParam Long vendedorId) {
-
+            @RequestParam Long vendedorId
+    ) {
         return ResponseEntity.ok(subastaService.crearSubasta(dto, vendedorId));
+    }
+
+    @PostMapping("/{id}/publicar")
+    public ResponseEntity<Subasta> publicar(
+            @PathVariable Long id,
+            @RequestParam Long vendedorId
+    ) {
+        return ResponseEntity.ok(subastaService.publicarSubasta(id, vendedorId));
     }
 
     @PostMapping("/cerrar-vencidas")

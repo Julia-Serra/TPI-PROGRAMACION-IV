@@ -1,16 +1,22 @@
 package com.subastas.service;
 
 import com.subastas.dto.CrearSubastaDTO;
+import com.subastas.entity.Producto;
 import com.subastas.entity.Subasta;
 import com.subastas.entity.Usuario;
 import com.subastas.enums.EstadoSubasta;
+import com.subastas.enums.RolUsuario;
+import com.subastas.repository.ProductoRepository;
+import com.subastas.repository.PujaRepository;
 import com.subastas.repository.SubastaRepository;
 import com.subastas.repository.UsuarioRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,20 +25,19 @@ public class SubastaService {
 
     private final SubastaRepository subastaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ProductoRepository productoRepository;
+    private final PujaRepository pujaRepository;
 
-    public SubastaService(SubastaRepository subastaRepository, UsuarioRepository usuarioRepository) {
+    public SubastaService(
+            SubastaRepository subastaRepository,
+            UsuarioRepository usuarioRepository,
+            ProductoRepository productoRepository,
+            PujaRepository pujaRepository
+    ) {
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
-    }
-
-    @Transactional
-    public Subasta crearSubasta(Subasta subasta) {
-
-        subasta.setEstado(EstadoSubasta.ACTIVA);
-        subasta.setFechaInicio(LocalDateTime.now());
-        subasta.setPrecioActual(subasta.getPrecioInicial());
-
-        return subastaRepository.save(subasta);
+        this.productoRepository = productoRepository;
+        this.pujaRepository = pujaRepository;
     }
 
     @Transactional
@@ -40,38 +45,122 @@ public class SubastaService {
         Usuario vendedor = usuarioRepository.findById(vendedorId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe el vendedor indicado"));
 
+        if (vendedor.isBloqueado()) {
+            throw new IllegalArgumentException("El vendedor está bloqueado");
+        }
+
+        if (vendedor.getRoles() == null ||
+                (!vendedor.getRoles().contains(RolUsuario.VENDEDOR)
+                        && !vendedor.getRoles().contains(RolUsuario.ADMIN))) {
+            throw new IllegalArgumentException("El usuario no tiene permiso para crear subastas");
+        }
+
+        Producto producto = productoRepository.findById(dto.productoId())
+                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
+
+        if (!dto.fechaCierre().isAfter(dto.fechaInicio())) {
+            throw new IllegalArgumentException("La fecha de cierre debe ser posterior a la fecha de inicio");
+        }
+
         Subasta subasta = Subasta.builder()
-                .titulo(dto.titulo())
-                .descripcion(dto.descripcion())
-                .precioInicial(dto.precioInicial())
-                .fechaFin(dto.fechaFin())
+                .producto(producto)
+                .precioBase(dto.precioBase())
+                .precioActual(dto.precioBase())
+                .incrementoMinimo(dto.incrementoMinimo())
+                .fechaInicio(dto.fechaInicio())
+                .fechaCierre(dto.fechaCierre())
+                .estado(EstadoSubasta.BORRADOR)
                 .vendedor(vendedor)
                 .build();
 
-        return crearSubasta(subasta);
+        return subastaRepository.save(subasta);
     }
 
     @Transactional
-    public List<Subasta> obtenerSubastasActivas() {
-        cerrarSubastasVencidas();
-        return subastaRepository.findByEstado(EstadoSubasta.ACTIVA);
+    public Subasta publicarSubasta(Long id, Long vendedorId) {
+        Subasta subasta = subastaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No existe la subasta indicada"));
+
+        Usuario usuario = usuarioRepository.findById(vendedorId)
+                .orElseThrow(() -> new IllegalArgumentException("No existe el usuario indicado"));
+
+        boolean esVendedor = subasta.getVendedor().getId().equals(usuario.getId());
+        boolean esAdmin = usuario.getRoles() != null && usuario.getRoles().contains(RolUsuario.ADMIN);
+
+        if (!esVendedor && !esAdmin) {
+            throw new IllegalArgumentException("No tenés permiso para publicar esta subasta");
+        }
+
+        if (subasta.getEstado() != EstadoSubasta.BORRADOR) {
+            throw new IllegalArgumentException("Solo se puede publicar una subasta en borrador");
+        }
+
+        subasta.setEstado(EstadoSubasta.PUBLICADA);
+
+        return subastaRepository.save(subasta);
+    }
+
+    @Transactional
+    public List<Subasta> obtenerSubastasVisibles() {
+        actualizarEstadosAutomaticamente();
+
+        List<Subasta> visibles = new ArrayList<>();
+        visibles.addAll(subastaRepository.findByEstado(EstadoSubasta.PUBLICADA));
+        visibles.addAll(subastaRepository.findByEstado(EstadoSubasta.ACTIVA));
+        visibles.addAll(subastaRepository.findByEstado(EstadoSubasta.FINALIZADA));
+        visibles.addAll(subastaRepository.findByEstado(EstadoSubasta.ADJUDICADA));
+
+        return visibles;
     }
 
     @Transactional
     public Optional<Subasta> obtenerDetalle(Long id) {
-        Optional<Subasta> subasta = subastaRepository.findById(id);
-        subasta.ifPresent(this::finalizarSiEstaVencida);
-        return subasta;
+        actualizarEstadosAutomaticamente();
+        return subastaRepository.findById(id);
+    }
+
+    @Transactional
+    public void actualizarEstadosAutomaticamente() {
+        activarSubastasPublicadas();
+        cerrarSubastasVencidas();
+    }
+
+    @Transactional
+    public int activarSubastasPublicadas() {
+        LocalDateTime ahora = LocalDateTime.now(Clock.systemUTC());
+
+        List<Subasta> publicadas = subastaRepository.findByFechaInicioBeforeAndEstado(
+                ahora,
+                EstadoSubasta.PUBLICADA
+        );
+
+        publicadas.forEach(subasta -> subasta.setEstado(EstadoSubasta.ACTIVA));
+        subastaRepository.saveAll(publicadas);
+
+        return publicadas.size();
     }
 
     @Transactional
     public int cerrarSubastasVencidas() {
-        List<Subasta> vencidas = subastaRepository.findByFechaFinBeforeAndEstado(
-                LocalDateTime.now(),
+        LocalDateTime ahora = LocalDateTime.now(Clock.systemUTC());
+
+        List<Subasta> vencidas = subastaRepository.findByFechaCierreBeforeAndEstado(
+                ahora,
                 EstadoSubasta.ACTIVA
         );
 
-        vencidas.forEach(subasta -> subasta.setEstado(EstadoSubasta.FINALIZADA));
+        for (Subasta subasta : vencidas) {
+            boolean tienePujas = pujaRepository.existsBySubastaId(subasta.getId());
+
+            if (tienePujas) {
+                subasta.setEstado(EstadoSubasta.ADJUDICADA);
+                subasta.setPrecioFinal(subasta.getPrecioActual());
+                subasta.setFechaAdjudicacion(ahora);
+            } else {
+                subasta.setEstado(EstadoSubasta.FINALIZADA);
+            }
+        }
+
         subastaRepository.saveAll(vencidas);
 
         return vencidas.size();
@@ -79,15 +168,7 @@ public class SubastaService {
 
     @Scheduled(fixedRate = 60000)
     @Transactional
-    public void cerrarSubastasVencidasAutomaticamente() {
-        cerrarSubastasVencidas();
+    public void actualizarSubastasAutomaticamente() {
+        actualizarEstadosAutomaticamente();
     }
-
-    private void finalizarSiEstaVencida(Subasta subasta) {
-        if (subasta.getEstado() == EstadoSubasta.ACTIVA && !subasta.getFechaFin().isAfter(LocalDateTime.now())) {
-            subasta.setEstado(EstadoSubasta.FINALIZADA);
-            subastaRepository.save(subasta);
-        }
-    }
-
 }
