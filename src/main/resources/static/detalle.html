@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle Subasta</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">Alto Valor</div>
+
+    <nav>
+        <a href="subastas.html">Volver</a>
+        <a href="perfil.html">Perfil</a>
+        <a href="#" onclick="logout()">Cerrar Sesión</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <h1 id="titulo">Cargando...</h1>
+    <p id="descripcion"></p>
+
+    <h2>Precio actual: <span id="precio"></span></h2>
+    <p>Finaliza: <span id="fechaFinDetalle"></span></p>
+</section>
+
+<section>
+    <h2>Pujar</h2>
+
+    <div style="text-align:center;">
+        <input type="number" id="monto" placeholder="Tu oferta" />
+
+        <button class="btn-principal" onclick="pujar()">
+            Enviar puja
+        </button>
+    </div>
+</section>
+
+<section>
+    <h2>Historial de pujas</h2>
+    <div class="cards" id="listaPujas"></div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

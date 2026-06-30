@@ -1,12 +1,12 @@
 package com.subastas.repository;
 
 import com.subastas.entity.Puja;
-import com.subastas.entity.Subasta;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface PujaRepository extends JpaRepository<Puja, Long> {
 
-    Optional<Puja> findTopBySubastaOrderByMontoDesc(Subasta subasta);
+    List<Puja> findBySubastaIdOrderByMontoDesc(Long subastaId);
+
 }
