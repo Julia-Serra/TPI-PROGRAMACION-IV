@@ -41,6 +41,6 @@ public class NotificacionService {
                 .orElseThrow(() -> new IllegalArgumentException("No existe la notificación indicada"));
 
         notificacion.setLeida(true);
-        notificacionRepository.save(notificacion);
+        return notificacionRepository.save(notificacion);
     }
 }
