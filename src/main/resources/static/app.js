@@ -352,7 +352,7 @@ async function pujar() {
 
         const dto = { monto };
 
-        const res = await apiFetch(`${API_URL}/pujas?subastaId=${id}&compradorId=${usuario.id}`, {
+        const res = await apiFetch(`${API_URL}/pujas?subastaId=${id}`, {
             method: "POST",
             headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(dto)
@@ -397,7 +397,7 @@ async function cargarPujas(id) {
         contenedor.innerHTML = pujas.map(p => `
             <div class="card">
                 <h3>${formatearMoneda(p.monto)}</h3>
-                <p>Usuario: ${p.comprador?.nombre || p.oferente || "Anónimo"}</p>
+                <p>Oferente: ${p.oferente || "Anónimo"}</p>
                 <p>Fecha: ${formatearFecha(p.fechaHora)}</p>
             </div>
         `).join("");
