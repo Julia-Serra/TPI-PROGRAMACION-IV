@@ -36,7 +36,7 @@ public class NotificacionService {
         return notificacionRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
     }
 
-    public void marcarComoLeida(Long id) {
+    public Notificacion marcarComoLeida(Long id) {
         Notificacion notificacion = notificacionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No existe la notificación indicada"));
 
