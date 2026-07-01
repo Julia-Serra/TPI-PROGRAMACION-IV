@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.subastas.dto.PujaPublicaDTO;
 
 import java.util.List;
 
@@ -35,12 +36,34 @@ public class PujaController {
     }
 
     @GetMapping("/subasta/{subastaId}")
-    public ResponseEntity<List<Puja>> listarPorSubasta(@PathVariable Long subastaId) {
-        return ResponseEntity.ok(pujaRepository.findBySubastaIdOrderByMontoDesc(subastaId));
+    public ResponseEntity<List<PujaPublicaDTO>> listarPorSubasta(@PathVariable Long subastaId) {
+        List<PujaPublicaDTO> pujas = pujaRepository.findBySubastaIdOrderByMontoDesc(subastaId)
+                .stream()
+                .map(puja -> new PujaPublicaDTO(
+                        puja.getMonto(),
+                        puja.getFechaHora(),
+                        "Oferente #" + puja.getComprador().getId()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(pujas);
     }
 
-    @GetMapping("/usuario/{compradorId}")
-    public ResponseEntity<List<Puja>> listarPorComprador(@PathVariable Long compradorId) {
-        return ResponseEntity.ok(pujaRepository.findByCompradorIdOrderByFechaHoraDesc(compradorId));
+   @GetMapping("/mis-pujas")
+    public ResponseEntity<List<PujaPublicaDTO>> listarMisPujas(Authentication authentication) {
+
+        Usuario comprador = (Usuario) authentication.getPrincipal();
+
+        List<PujaPublicaDTO> pujas = pujaRepository
+                .findByCompradorIdOrderByFechaHoraDesc(comprador.getId())
+                .stream()
+                .map(puja -> new PujaPublicaDTO(
+                        puja.getMonto(),
+                        puja.getFechaHora(),
+                        "Mi puja"
+                ))
+                .toList();
+
+        return ResponseEntity.ok(pujas);
     }
 }

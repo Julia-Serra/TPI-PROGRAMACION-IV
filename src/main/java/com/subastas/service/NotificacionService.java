@@ -35,4 +35,12 @@ public class NotificacionService {
     public List<Notificacion> listarPorUsuario(Long usuarioId) {
         return notificacionRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
     }
+
+    public void marcarComoLeida(Long id) {
+        Notificacion notificacion = notificacionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No existe la notificación indicada"));
+
+        notificacion.setLeida(true);
+        notificacionRepository.save(notificacion);
+    }
 }

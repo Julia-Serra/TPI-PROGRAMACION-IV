@@ -8,7 +8,10 @@
 <body>
 
 <header>
-    <div class="logo">Alto Valor</div>
+    <div class="logo">
+        <img src="/img/martillo.png" alt="Martillo de subasta" class="logo-martillo">
+        <span>Alto Valor</span>
+    </div>
     <nav>
         <a href="subastas.html">Volver</a>
         <a href="perfil.html">Perfil</a>
@@ -30,15 +33,15 @@
 <section>
     <h2>Realizar puja</h2>
 
-    <div style="text-align:center;">
+    <div class="contenedor-puja">
         <input
-                type="number"
-                id="monto"
-                placeholder="Tu oferta"
-                min="0.01"
-                step="0.01"
-        >
-
+            class="input-puja"
+            type="number"
+            id="monto"
+            placeholder="Tu oferta"
+            min="0.01"
+            step="0.01"
+        >   
         <button class="btn-principal" onclick="pujar()">
             Enviar puja
         </button>
