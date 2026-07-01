@@ -264,7 +264,8 @@ async function crearSubasta(e) {
             precioBase: Number(document.getElementById("precioInicial").value),
             incrementoMinimo: Number(document.getElementById("incrementoMinimo").value),
             fechaInicio: fechaInicio,
-            fechaCierre: fechaCierre
+            fechaCierre: fechaCierre,
+            estado: document.getElementById("estadoSubasta").value
         };
 
         const res = await apiFetch(`${API_URL}/subastas`, {

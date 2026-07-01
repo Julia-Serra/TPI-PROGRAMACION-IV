@@ -6,6 +6,7 @@ import com.subastas.entity.Usuario;
 import com.subastas.enums.EstadoSubasta;
 import com.subastas.repository.HistorialEstadoSubastaRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -20,7 +21,8 @@ public class HistorialEstadoSubastaService {
         this.historialRepository = historialRepository;
     }
 
-    public void registrarCambio(
+    @Transactional
+    public HistorialEstadoSubasta registrarCambio(
             Subasta subasta,
             EstadoSubasta estadoAnterior,
             EstadoSubasta estadoNuevo,
@@ -36,7 +38,7 @@ public class HistorialEstadoSubastaService {
                 .fecha(LocalDateTime.now(Clock.systemUTC()))
                 .build();
 
-        historialRepository.save(historial);
+        return historialRepository.save(historial);
     }
 
     public List<HistorialEstadoSubasta> listarPorSubasta(Long subastaId) {

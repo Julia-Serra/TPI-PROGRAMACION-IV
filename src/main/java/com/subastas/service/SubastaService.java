@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.subastas.dto.CancelarSubastaDTO;
+import com.subastas.entity.Categoria;
+import com.subastas.repository.CategoriaRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -31,6 +33,7 @@ public class SubastaService {
     private final PujaRepository pujaRepository;
     private final NotificacionService notificacionService;
     private final HistorialEstadoSubastaService historialEstadoSubastaService;
+    private final CategoriaRepository categoriaRepository;
 
     public SubastaService(
             SubastaRepository subastaRepository,
@@ -38,7 +41,7 @@ public class SubastaService {
             ProductoRepository productoRepository,
             PujaRepository pujaRepository,
             NotificacionService notificacionService,
-            HistorialEstadoSubastaService historialEstadoSubastaService
+            HistorialEstadoSubastaService historialEstadoSubastaService, CategoriaRepository categoriaRepository
     ) {
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
@@ -46,6 +49,7 @@ public class SubastaService {
         this.pujaRepository = pujaRepository;
         this.notificacionService = notificacionService;
         this.historialEstadoSubastaService = historialEstadoSubastaService;
+        this.categoriaRepository = categoriaRepository;
     }
 
     @Transactional
@@ -63,8 +67,23 @@ public class SubastaService {
             throw new IllegalArgumentException("El usuario no tiene permiso para crear subastas");
         }
 
-        Producto producto = productoRepository.findById(dto.productoId())
-                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
+        Categoria categoria = categoriaRepository.findByNombre("General")
+                .orElseGet(() -> categoriaRepository.save(
+                        Categoria.builder()
+                                .nombre("General")
+                                .build()
+                ));
+
+        Producto producto = Producto.builder()
+                .titulo(dto.titulo())
+                .descripcion(dto.descripcion())
+                .categoria(categoria)
+                .vendedor(vendedor)
+                .moderado(false)
+                .eliminado(false)
+                .build();
+
+        producto = productoRepository.save(producto);
 
         if (!dto.fechaCierre().isAfter(dto.fechaInicio())) {
             throw new IllegalArgumentException("La fecha de cierre debe ser posterior a la fecha de inicio");
@@ -77,7 +96,7 @@ public class SubastaService {
                 .incrementoMinimo(dto.incrementoMinimo())
                 .fechaInicio(dto.fechaInicio())
                 .fechaCierre(dto.fechaCierre())
-                .estado(EstadoSubasta.BORRADOR)
+                .estado(validarEstadoInicial(dto.estado()))
                 .vendedor(vendedor)
                 .build();
 
@@ -299,5 +318,13 @@ public class SubastaService {
     @Transactional
     public void actualizarSubastasAutomaticamente() {
         actualizarEstadosAutomaticamente();
+    }
+
+    private EstadoSubasta validarEstadoInicial(EstadoSubasta estado) {
+        if (estado != EstadoSubasta.BORRADOR && estado != EstadoSubasta.PUBLICADA) {
+            throw new IllegalArgumentException("El estado inicial solo puede ser BORRADOR o PUBLICADA");
+        }
+
+        return estado;
     }
 }

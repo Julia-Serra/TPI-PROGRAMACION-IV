@@ -4,6 +4,7 @@ import com.subastas.entity.Notificacion;
 import com.subastas.entity.Usuario;
 import com.subastas.repository.NotificacionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -18,13 +19,14 @@ public class NotificacionService {
         this.notificacionRepository = notificacionRepository;
     }
 
+    @Transactional
     public Notificacion crearNotificacion(Usuario usuario, String titulo, String mensaje) {
         Notificacion notificacion = Notificacion.builder()
                 .usuario(usuario)
                 .titulo(titulo)
                 .mensaje(mensaje)
-                .fecha(LocalDateTime.now(Clock.systemUTC()))
                 .leida(false)
+                .fecha(LocalDateTime.now(Clock.systemUTC()))
                 .build();
 
         return notificacionRepository.save(notificacion);
@@ -32,14 +34,5 @@ public class NotificacionService {
 
     public List<Notificacion> listarPorUsuario(Long usuarioId) {
         return notificacionRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
-    }
-
-    public Notificacion marcarComoLeida(Long id) {
-        Notificacion notificacion = notificacionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("No existe la notificación indicada"));
-
-        notificacion.setLeida(true);
-
-        return notificacionRepository.save(notificacion);
     }
 }
