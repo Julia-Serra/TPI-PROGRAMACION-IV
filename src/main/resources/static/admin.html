@@ -21,7 +21,7 @@
     <p>Gestión de usuarios, productos, subastas y disputas.</p>
 </section>
 
-<section>
+<section class="form-card">
     <h2>Asignar roles</h2>
     <input type="email" id="adminEmailRoles" placeholder="Email del usuario">
 
@@ -32,21 +32,21 @@
     <button class="btn-principal" onclick="adminAsignarRoles()">Guardar roles</button>
 </section>
 
-<section>
+<section class="form-card">
     <h2>Suspender / Reactivar usuario</h2>
     <input type="email" id="adminEmailSuspender" placeholder="Email del usuario">
     <button class="btn-principal" onclick="adminSuspenderUsuario()">Suspender</button>
     <button class="btn-principal" onclick="adminReactivarUsuario()">Reactivar</button>
 </section>
 
-<section>
+<section class="form-card">
     <h2>Cancelar subasta</h2>
     <input type="number" id="adminSubastaId" placeholder="ID de subasta">
     <textarea id="adminMotivoCancelacion" placeholder="Motivo de cancelación"></textarea>
     <button class="btn-principal" onclick="adminCancelarSubasta()">Cancelar subasta</button>
 </section>
 
-<section>
+<section class="form-card">
     <h2>Resolver disputa</h2>
     <input type="number" id="adminDisputaId" placeholder="ID de disputa">
 
@@ -61,18 +61,18 @@
     <button class="btn-principal" onclick="adminResolverDisputa()">Resolver disputa</button>
 </section>
 
-<section>
-    <h2>Usuarios</h2>
+<section class="form-card">
+    <h2 class="admin-title">Usuarios</h2>
     <div class="cards" id="adminListaUsuarios"></div>
 </section>
 
-<section>
-    <h2>Subastas</h2>
+<section class="form-card">
+    <h2 class="admin-title">Subastas</h2>
     <div class="cards" id="adminListaSubastas"></div>
 </section>
 
-<section>
-    <h2>Disputas</h2>
+<section class="form-card">
+    <h2 class="admin-title">Disputas</h2>
     <div class="cards" id="adminListaDisputas"></div>
 </section>
 
