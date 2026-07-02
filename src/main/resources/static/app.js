@@ -241,10 +241,11 @@ async function cargarSubastas() {
 
                 <p>Cierre: ${formatearFecha(s.fechaCierre)}</p>
 
-                <button class="btn-principal"
-                        onclick="verDetalle(${s.id})">
-                    Ver detalle
-                </button>
+                ${s.estado === "BORRADOR" ? `
+                    <button class="btn-principal" onclick="publicarSubasta(${s.id})">
+                        Publicar
+                    </button>
+                ` : ""}
             </div>
         `).join("");
 
@@ -677,6 +678,33 @@ async function marcarNotificacionLeida(id) {
 
     } catch (error) {
 
+        alert(error.message);
+    }
+}
+
+async function publicarSubasta(id) {
+
+    const usuario = await getUsuarioActual();
+
+    try {
+
+        const res = await apiFetch(
+            `${API_URL}/subastas/${id}/publicar?vendedorId=${usuario.id}`,
+            {
+                method: "POST",
+                headers: authHeaders()
+            }
+        );
+
+        if (!res.ok) {
+            throw new Error(await leerError(res, "No se pudo publicar la subasta"));
+        }
+
+        alert("Subasta publicada correctamente");
+
+        await cargarSubastas();
+
+    } catch (error) {
         alert(error.message);
     }
 }
