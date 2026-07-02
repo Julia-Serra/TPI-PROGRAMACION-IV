@@ -88,7 +88,7 @@ function formatearMoneda(valor) {
 function formatearFecha(fecha) {
     if (!fecha) return "Sin fecha";
 
-    return new Date(fecha).toLocaleString("es-AR", {
+    return new Date(fecha + "Z").toLocaleString("es-AR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -263,8 +263,8 @@ async function crearSubasta(e) {
             descripcion: document.getElementById("descripcionSubasta").value.trim(),
             precioBase: Number(document.getElementById("precioInicial").value),
             incrementoMinimo: Number(document.getElementById("incrementoMinimo").value),
-            fechaInicio: fechaInicio,
-            fechaCierre: fechaCierre,
+            fechaInicio: convertirFechaLocalAUTC(fechaInicio),
+            fechaCierre: convertirFechaLocalAUTC(fechaCierre),
             estado: document.getElementById("estadoSubasta").value
         };
 
@@ -283,6 +283,9 @@ async function crearSubasta(e) {
     } catch (error) {
         alert(error.message || "Error al crear la subasta");
     }
+}
+function convertirFechaLocalAUTC(fechaLocal) {
+    return new Date(fechaLocal).toISOString().slice(0, 19);
 }
 
 async function cargarDetalle() {
