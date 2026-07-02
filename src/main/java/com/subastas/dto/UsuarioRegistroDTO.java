@@ -20,7 +20,7 @@ public record UsuarioRegistroDTO(
         @NotBlank(message = "La contraseña es obligatoria")
         String password,
 
-        //@NotEmpty(message = "Debe seleccionar al menos un rol de usuario")
+        @NotEmpty(message = "Debe seleccionar al menos un rol.")
         Set<RolUsuario> roles
 ) {
 }

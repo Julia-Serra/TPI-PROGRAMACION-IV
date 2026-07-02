@@ -166,6 +166,10 @@ async function register(e) {
 
     const roles = Array.from(document.querySelectorAll(".rolRegistro:checked"))
         .map(check => check.value);
+    if (roles.length === 0) {
+        alert("Debe seleccionar al menos un rol de usuario.");
+        return;
+    }
     const dto = {
         nombre: document.getElementById("nombre").value.trim(),
         email: document.getElementById("email").value.trim(),

@@ -31,10 +31,10 @@ public class AuthService {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new RuntimeException("El email ya está registrado");
         }
-
         Set<RolUsuario> roles = dto.roles();
+
         if (roles == null || roles.isEmpty()) {
-            roles = Set.of(RolUsuario.COMPRADOR);
+            throw new RuntimeException("Debe seleccionar al menos un rol.");
         }
         if (roles.contains(RolUsuario.ADMIN)) {
             throw new RuntimeException("No se puede registrar un usuario como ADMIN desde el registro público");
