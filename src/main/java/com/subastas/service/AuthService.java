@@ -32,13 +32,20 @@ public class AuthService {
             throw new RuntimeException("El email ya está registrado");
         }
 
+        Set<RolUsuario> roles = dto.roles();
+        if (roles == null || roles.isEmpty()) {
+            roles = Set.of(RolUsuario.COMPRADOR);
+        }
+        if (roles.contains(RolUsuario.ADMIN)) {
+            throw new RuntimeException("No se puede registrar un usuario como ADMIN desde el registro público");
+        }
+
         Usuario usuario = Usuario.builder()
                 .nombre(dto.nombre())
                 .email(dto.email())
                 .password(passwordEncoder.encode(dto.password()))
-                .roles(Set.of(RolUsuario.COMPRADOR))
+                .roles(roles)
                 .build();
-
         usuarioRepository.save(usuario);
 
         return "Usuario registrado correctamente";

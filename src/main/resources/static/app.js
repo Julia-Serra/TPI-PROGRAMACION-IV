@@ -164,10 +164,13 @@ async function login(e) {
 async function register(e) {
     e.preventDefault();
 
+    const roles = Array.from(document.querySelectorAll(".rolRegistro:checked"))
+        .map(check => check.value);
     const dto = {
         nombre: document.getElementById("nombre").value.trim(),
         email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value
+        password: document.getElementById("password").value,
+        roles: roles
     };
 
     try {
