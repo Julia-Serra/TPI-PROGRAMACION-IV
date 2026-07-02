@@ -8,10 +8,7 @@
 <body>
 
 <header>
-    <div class="logo">
-        <img src="/img/martillo.png" alt="Martillo de subasta" class="logo-martillo">
-        <span>Alto Valor</span>
-    </div>  
+    <div class="logo">Alto Valor</div>
     <nav>
         <a href="subastas.html">Subastas</a>
         <a href="perfil.html">Perfil</a>
@@ -21,55 +18,47 @@
 
 <section class="hero">
     <h1>Panel de administración</h1>
-    <p>Asignar roles, suspender usuarios y cancelar subastas.</p>
+    <p>Gestión de usuarios, productos, subastas y disputas.</p>
 </section>
 
 <section>
-    <h2>Asignar roles por email</h2>
-
+    <h2>Asignar roles</h2>
     <input type="email" id="adminEmailRoles" placeholder="Email del usuario">
 
-    <label>
-        <input type="checkbox" value="COMPRADOR" class="rolCheck"> COMPRADOR
-    </label>
+    <label><input type="checkbox" value="COMPRADOR" class="rolCheck"> COMPRADOR</label>
+    <label><input type="checkbox" value="VENDEDOR" class="rolCheck"> VENDEDOR</label>
+    <label><input type="checkbox" value="ADMIN" class="rolCheck"> ADMIN</label>
 
-    <label>
-        <input type="checkbox" value="VENDEDOR" class="rolCheck"> VENDEDOR
-    </label>
-
-    <label>
-        <input type="checkbox" value="ADMIN" class="rolCheck"> ADMIN
-    </label>
-
-    <button class="btn-principal" onclick="adminAsignarRoles()">
-        Guardar roles
-    </button>
+    <button class="btn-principal" onclick="adminAsignarRoles()">Guardar roles</button>
 </section>
 
 <section>
-    <h2>Suspender o reactivar usuario</h2>
-
+    <h2>Suspender / Reactivar usuario</h2>
     <input type="email" id="adminEmailSuspender" placeholder="Email del usuario">
-
-    <button class="btn-principal" onclick="adminSuspenderUsuario()">
-        Suspender
-    </button>
-
-    <button class="btn-principal" onclick="adminReactivarUsuario()">
-        Reactivar
-    </button>
+    <button class="btn-principal" onclick="adminSuspenderUsuario()">Suspender</button>
+    <button class="btn-principal" onclick="adminReactivarUsuario()">Reactivar</button>
 </section>
 
 <section>
     <h2>Cancelar subasta</h2>
-
     <input type="number" id="adminSubastaId" placeholder="ID de subasta">
-
     <textarea id="adminMotivoCancelacion" placeholder="Motivo de cancelación"></textarea>
+    <button class="btn-principal" onclick="adminCancelarSubasta()">Cancelar subasta</button>
+</section>
 
-    <button class="btn-principal" onclick="adminCancelarSubasta()">
-        Cancelar subasta
-    </button>
+<section>
+    <h2>Resolver disputa</h2>
+    <input type="number" id="adminDisputaId" placeholder="ID de disputa">
+
+    <select id="adminEstadoResolucion">
+        <option value="ADJUDICADA">Mantener adjudicada</option>
+        <option value="FINALIZADA">Finalizar</option>
+        <option value="CANCELADA">Cancelar</option>
+    </select>
+
+    <textarea id="adminResolucionDisputa" placeholder="Resolución administrativa"></textarea>
+
+    <button class="btn-principal" onclick="adminResolverDisputa()">Resolver disputa</button>
 </section>
 
 <section>
@@ -78,8 +67,18 @@
 </section>
 
 <section>
+    <h2>Productos / publicaciones</h2>
+    <div class="cards" id="adminListaProductos"></div>
+</section>
+
+<section>
     <h2>Subastas</h2>
     <div class="cards" id="adminListaSubastas"></div>
+</section>
+
+<section>
+    <h2>Disputas</h2>
+    <div class="cards" id="adminListaDisputas"></div>
 </section>
 
 <script src="app.js"></script>

@@ -1,11 +1,17 @@
 package com.subastas.controller;
 
 import com.subastas.dto.CancelarSubastaDTO;
+import com.subastas.dto.ResolverDisputaDTO;
+import com.subastas.entity.Disputa;
+import com.subastas.entity.Producto;
 import com.subastas.entity.Subasta;
 import com.subastas.entity.Usuario;
 import com.subastas.enums.RolUsuario;
+import com.subastas.repository.DisputaRepository;
+import com.subastas.repository.ProductoRepository;
 import com.subastas.repository.SubastaRepository;
 import com.subastas.repository.UsuarioRepository;
+import com.subastas.service.DisputaService;
 import com.subastas.service.SubastaService;
 import com.subastas.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -20,20 +26,29 @@ import java.util.Set;
 public class AdminController {
 
     private final UsuarioRepository usuarioRepository;
+    private final ProductoRepository productoRepository;
     private final SubastaRepository subastaRepository;
+    private final DisputaRepository disputaRepository;
     private final UsuarioService usuarioService;
     private final SubastaService subastaService;
+    private final DisputaService disputaService;
 
     public AdminController(
             UsuarioRepository usuarioRepository,
+            ProductoRepository productoRepository,
             SubastaRepository subastaRepository,
+            DisputaRepository disputaRepository,
             UsuarioService usuarioService,
-            SubastaService subastaService
+            SubastaService subastaService,
+            DisputaService disputaService
     ) {
         this.usuarioRepository = usuarioRepository;
+        this.productoRepository = productoRepository;
         this.subastaRepository = subastaRepository;
+        this.disputaRepository = disputaRepository;
         this.usuarioService = usuarioService;
         this.subastaService = subastaService;
+        this.disputaService = disputaService;
     }
 
     @GetMapping("/usuarios")
@@ -68,6 +83,33 @@ public class AdminController {
         return ResponseEntity.ok(usuarioService.desbloquear(usuario.getId()));
     }
 
+    @GetMapping("/productos")
+    public ResponseEntity<List<Producto>> listarProductos() {
+        return ResponseEntity.ok(productoRepository.findAll());
+    }
+
+    @PutMapping("/productos/{id}/aprobar")
+    public ResponseEntity<Producto> aprobarProducto(@PathVariable Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
+
+        producto.setModerado(true);
+        producto.setEliminado(false);
+
+        return ResponseEntity.ok(productoRepository.save(producto));
+    }
+
+    @PutMapping("/productos/{id}/rechazar")
+    public ResponseEntity<Producto> rechazarProducto(@PathVariable Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
+
+        producto.setModerado(false);
+        producto.setEliminado(true);
+
+        return ResponseEntity.ok(productoRepository.save(producto));
+    }
+
     @GetMapping("/subastas")
     public ResponseEntity<List<Subasta>> listarSubastas() {
         return ResponseEntity.ok(subastaRepository.findAll());
@@ -80,5 +122,19 @@ public class AdminController {
             @Valid @RequestBody CancelarSubastaDTO dto
     ) {
         return ResponseEntity.ok(subastaService.cancelarSubasta(id, adminId, dto));
+    }
+
+    @GetMapping("/disputas")
+    public ResponseEntity<List<Disputa>> listarDisputas() {
+        return ResponseEntity.ok(disputaRepository.findAll());
+    }
+
+    @PutMapping("/disputas/{id}/resolver")
+    public ResponseEntity<Disputa> resolverDisputa(
+            @PathVariable Long id,
+            @RequestParam Long adminId,
+            @Valid @RequestBody ResolverDisputaDTO dto
+    ) {
+        return ResponseEntity.ok(disputaService.resolverDisputa(id, adminId, dto));
     }
 }

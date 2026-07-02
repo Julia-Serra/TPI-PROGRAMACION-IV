@@ -469,6 +469,8 @@ async function cargarPanelAdmin() {
 
     await adminCargarUsuarios();
     await adminCargarSubastas();
+    await adminCargarProductos();
+    await adminCargarDisputas();
 }
 
 async function adminCargarUsuarios() {
@@ -677,4 +679,133 @@ async function marcarNotificacionLeida(id) {
 
         alert(error.message);
     }
+}
+async function adminCargarProductos() {
+    const contenedor = document.getElementById("adminListaProductos");
+    if (!contenedor) return;
+
+    const res = await apiFetch(`${API_URL}/admin/productos`, {
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        contenedor.innerHTML = `<p class="mensaje error">Error cargando productos</p>`;
+        return;
+    }
+
+    const productos = await res.json();
+
+    contenedor.innerHTML = productos.map(p => `
+        <div class="card">
+            <h3>${p.titulo}</h3>
+            <p>${p.descripcion || ""}</p>
+            <p>Categoría: ${p.categoria?.nombre || "Sin categoría"}</p>
+            <p>Vendedor: ${p.vendedor?.email || "Sin vendedor"}</p>
+            <p>Moderado: ${p.moderado ? "Sí" : "No"}</p>
+            <p>Eliminado: ${p.eliminado ? "Sí" : "No"}</p>
+
+            <button class="btn-principal" onclick="adminAprobarProducto(${p.id})">
+                Aprobar
+            </button>
+
+            <button class="btn-principal" onclick="adminRechazarProducto(${p.id})">
+                Rechazar
+            </button>
+        </div>
+    `).join("");
+}
+
+async function adminAprobarProducto(id) {
+    const res = await apiFetch(`${API_URL}/admin/productos/${id}/aprobar`, {
+        method: "PUT",
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo aprobar el producto"));
+        return;
+    }
+
+    alert("Producto aprobado");
+    await adminCargarProductos();
+}
+
+async function adminRechazarProducto(id) {
+    const res = await apiFetch(`${API_URL}/admin/productos/${id}/rechazar`, {
+        method: "PUT",
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo rechazar el producto"));
+        return;
+    }
+
+    alert("Producto rechazado");
+    await adminCargarProductos();
+}
+
+async function adminCargarDisputas() {
+    const contenedor = document.getElementById("adminListaDisputas");
+    if (!contenedor) return;
+
+    const res = await apiFetch(`${API_URL}/admin/disputas`, {
+        headers: authHeaders()
+    });
+
+    if (!res.ok) {
+        contenedor.innerHTML = `<p class="mensaje error">Error cargando disputas</p>`;
+        return;
+    }
+
+    const disputas = await res.json();
+
+    if (!disputas.length) {
+        contenedor.innerHTML = `<p class="mensaje">No hay disputas registradas.</p>`;
+        return;
+    }
+
+    contenedor.innerHTML = disputas.map(d => `
+        <div class="card">
+            <h3>Disputa #${d.id}</h3>
+            <p>Subasta ID: ${d.subasta?.id || "-"}</p>
+            <p>Producto: ${d.subasta?.producto?.titulo || "-"}</p>
+            <p>Iniciada por: ${d.iniciadaPor?.email || "-"}</p>
+            <p>Motivo: ${d.motivo}</p>
+            <p>Descripción: ${d.descripcion || "-"}</p>
+            <p>Creación: ${formatearFecha(d.fechaCreacion)}</p>
+            <p>Resolución: ${d.resolucionAdmin || "Pendiente"}</p>
+        </div>
+    `).join("");
+}
+
+async function adminResolverDisputa() {
+    const usuario = await getUsuarioActual();
+
+    const id = document.getElementById("adminDisputaId").value;
+    const estadoFinal = document.getElementById("adminEstadoResolucion").value;
+    const resolucion = document.getElementById("adminResolucionDisputa").value.trim();
+
+    if (!id || !estadoFinal || !resolucion) {
+        alert("Ingresá ID de disputa, estado final y resolución.");
+        return;
+    }
+
+    const res = await apiFetch(`${API_URL}/admin/disputas/${id}/resolver?adminId=${usuario.id}`, {
+        method: "PUT",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+            estadoFinal,
+            resolucion
+        })
+    });
+
+    if (!res.ok) {
+        alert(await leerError(res, "No se pudo resolver la disputa"));
+        return;
+    }
+
+    alert("Disputa resuelta correctamente");
+    await adminCargarDisputas();
+    await adminCargarSubastas();
 }
