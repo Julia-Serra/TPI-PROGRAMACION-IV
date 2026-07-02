@@ -314,6 +314,11 @@ async function cargarDetalle() {
 
         document.getElementById("precio").innerText =
             formatearMoneda(s.precioActual || s.precioBase);
+        const incremento = document.getElementById("incrementoMinimo");
+
+        if (incremento) {
+            incremento.innerText = formatearMoneda(s.incrementoMinimo);
+        }
 
         const estado = document.getElementById("estadoSubasta");
         if (estado) estado.innerText = s.estado;
