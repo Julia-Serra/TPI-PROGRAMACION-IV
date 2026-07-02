@@ -234,17 +234,11 @@ async function cargarSubastas() {
 
                 <p>Cierre: ${formatearFecha(s.fechaCierre)}</p>
 
-                ${
-                    s.estado === "BORRADOR"
-                        ? `<button class="btn-principal"
-                                onclick="publicarSubasta(${s.id})">
-                                Publicar
-                           </button>`
-                        : `<button class="btn-principal"
-                                onclick="verDetalle(${s.id})">
-                                Ver detalle
-                           </button>`
-                }
+                ${s.estado === "BORRADOR" ? `
+                    <button class="btn-principal" onclick="publicarSubasta(${s.id})">
+                        Publicar
+                    </button>
+                ` : ""}
             </div>
         `).join("");
 
