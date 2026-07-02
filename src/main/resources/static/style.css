@@ -425,3 +425,24 @@ button.btn-principal{
 .input-puja::placeholder {
     color: #aaa;
 }
+
+.btn-secundario {
+    background: linear-gradient(135deg, #d4af37, #f2d56b);
+    color: #111;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 26px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-secundario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.45);
+}
+
+.notificacion-no-leida .btn-secundario {
+    margin-top: 14px;
+}
