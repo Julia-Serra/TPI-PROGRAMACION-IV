@@ -423,6 +423,7 @@ async function cargarPerfil() {
         document.getElementById("perfilNombre").innerText = usuario.nombre;
         document.getElementById("perfilEmail").innerText = usuario.email;
         document.getElementById("perfilRol").innerText = usuario.roles?.join(", ") || "Sin roles";
+        await cargarNotificaciones(usuario.id);
     } catch (error) {
         alert(error.message || "Error cargando perfil");
         logout();
@@ -575,4 +576,78 @@ async function adminCancelarSubasta() {
 
     alert("Subasta cancelada correctamente");
     await adminCargarSubastas();
+}
+
+async function cargarNotificaciones(usuarioId) {
+
+    const contenedor = document.getElementById("contenedorNotificaciones");
+
+    if (!contenedor) return;
+
+    try {
+
+        const res = await apiFetch(`${API_URL}/notificaciones/usuario/${usuarioId}`, {
+            headers: authHeaders()
+        });
+
+        if (!res.ok) {
+            throw new Error(await leerError(res, "Error cargando notificaciones"));
+        }
+
+        const notificaciones = await res.json();
+
+        if (notificaciones.length === 0) {
+            contenedor.innerHTML = `
+                <p class="mensaje">No tenés notificaciones.</p>
+            `;
+            return;
+        }
+
+        contenedor.innerHTML = notificaciones.map(n => `
+            <div class="card ${n.leida ? "" : "notificacion-no-leida"}">
+                <h3>${n.titulo}</h3>
+                <p>${n.mensaje}</p>
+                <small>${formatearFecha(n.fecha)}</small>
+                <br><br>
+
+                ${
+                    n.leida
+                    ? "<span>✔ Leída</span>"
+                    : `<button class="btn-secundario"
+                        onclick="marcarNotificacionLeida(${n.id})">
+                        Marcar como leída
+                    </button>`
+                }
+            </div>
+        `).join("");
+
+    } catch (error) {
+
+        contenedor.innerHTML = `
+            <p class="mensaje error">${error.message}</p>
+        `;
+    }
+}
+
+async function marcarNotificacionLeida(id) {
+
+    try {
+
+        const res = await apiFetch(`${API_URL}/notificaciones/${id}/leida`, {
+            method: "PUT",
+            headers: authHeaders()
+        });
+
+        if (!res.ok) {
+            throw new Error(await leerError(res, "No se pudo marcar la notificación"));
+        }
+
+        const usuario = await getUsuarioActual();
+
+        await cargarNotificaciones(usuario.id);
+
+    } catch (error) {
+
+        alert(error.message);
+    }
 }
