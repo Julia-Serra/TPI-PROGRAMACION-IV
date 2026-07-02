@@ -25,6 +25,16 @@ public class SubastaController {
     public List<Subasta> listar() {
         return subastaService.obtenerSubastasVisibles();
     }
+    
+    @GetMapping("/mias")
+    public ResponseEntity<List<Subasta>> obtenerMisSubastas(Authentication authentication) {
+
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                subastaService.obtenerMisSubastas(usuario.getId())
+        );
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<Subasta> obtenerDetalle(@PathVariable Long id) {
