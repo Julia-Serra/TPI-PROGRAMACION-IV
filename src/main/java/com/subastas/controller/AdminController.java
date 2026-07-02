@@ -83,33 +83,6 @@ public class AdminController {
         return ResponseEntity.ok(usuarioService.desbloquear(usuario.getId()));
     }
 
-    @GetMapping("/productos")
-    public ResponseEntity<List<Producto>> listarProductos() {
-        return ResponseEntity.ok(productoRepository.findAll());
-    }
-
-    @PutMapping("/productos/{id}/aprobar")
-    public ResponseEntity<Producto> aprobarProducto(@PathVariable Long id) {
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
-
-        producto.setModerado(true);
-        producto.setEliminado(false);
-
-        return ResponseEntity.ok(productoRepository.save(producto));
-    }
-
-    @PutMapping("/productos/{id}/rechazar")
-    public ResponseEntity<Producto> rechazarProducto(@PathVariable Long id) {
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("No existe el producto indicado"));
-
-        producto.setModerado(false);
-        producto.setEliminado(true);
-
-        return ResponseEntity.ok(productoRepository.save(producto));
-    }
-
     @GetMapping("/subastas")
     public ResponseEntity<List<Subasta>> listarSubastas() {
         return ResponseEntity.ok(subastaRepository.findAll());
