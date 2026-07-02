@@ -196,7 +196,16 @@ async function cargarSubastas() {
     contenedor.innerHTML = `<p class="mensaje">Cargando subastas...</p>`;
 
     try {
-        const res = await apiFetch(`${API_URL}/subastas`, {
+
+        const usuario = await getUsuarioActual();
+
+        let url = `${API_URL}/subastas`;
+
+        if (tieneRol(usuario, "VENDEDOR") || tieneRol(usuario, "ADMIN")) {
+            url = `${API_URL}/subastas/mias`;
+        }
+
+        const res = await apiFetch(url, {
             headers: authHeaders()
         });
 
@@ -214,18 +223,29 @@ async function cargarSubastas() {
         contenedor.innerHTML = data.map(s => `
             <div class="card">
                 <h3>${s.producto?.titulo || s.titulo || "Subasta sin título"}</h3>
+
                 <p>${s.producto?.descripcion || s.descripcion || ""}</p>
+
                 <p><strong>${formatearMoneda(s.precioActual || s.precioBase)}</strong></p>
+
                 <p>Estado: ${s.estado}</p>
+
                 <p>Inicio: ${formatearFecha(s.fechaInicio)}</p>
+
                 <p>Cierre: ${formatearFecha(s.fechaCierre)}</p>
-                <button class="btn-principal" onclick="verDetalle(${s.id})">Ver detalle</button>
+
+                <button class="btn-principal"
+                        onclick="verDetalle(${s.id})">
+                    Ver detalle
+                </button>
             </div>
         `).join("");
+
     } catch (error) {
         contenedor.innerHTML = `<p class="mensaje error">${error.message}</p>`;
     }
 }
+
 
 function verDetalle(id) {
     localStorage.setItem("subastaId", id);
