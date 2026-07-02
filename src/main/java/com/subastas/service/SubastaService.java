@@ -152,6 +152,11 @@ public class SubastaService {
         return visibles;
     }
 
+    @Transactional(readOnly = true)
+    public List<Subasta> obtenerMisSubastas(Long vendedorId) {
+        return subastaRepository.findByVendedorId(vendedorId);
+    }
+
     @Transactional
     public Optional<Subasta> obtenerDetalle(Long id) {
         actualizarEstadosAutomaticamente();
