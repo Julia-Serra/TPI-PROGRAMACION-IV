@@ -50,6 +50,26 @@
     </div>
 </section>
 
+<div id="bloqueDisputa" class="card" style="display:none; margin-top:25px;">
+    <h2>Abrir disputa</h2>
+
+    <input
+        type="text"
+        id="motivoDisputa"
+        placeholder="Motivo de la disputa"
+    >
+
+    <textarea
+        id="descripcionDisputa"
+        placeholder="Descripción de la disputa"
+        rows="4"
+    ></textarea>
+
+    <button class="btn-principal" onclick="abrirDisputa()">
+        Abrir disputa
+    </button>
+</div>
+
 <section>
     <h2>Historial de pujas</h2>
     <div class="cards" id="listaPujas"></div>

@@ -3,9 +3,11 @@ package com.subastas.controller;
 import com.subastas.dto.AbrirDisputaDTO;
 import com.subastas.dto.ResolverDisputaDTO;
 import com.subastas.entity.Disputa;
+import com.subastas.entity.Usuario;
 import com.subastas.service.DisputaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,19 +25,27 @@ public class DisputaController {
     @PostMapping
     public ResponseEntity<Disputa> abrirDisputa(
             @RequestParam Long subastaId,
-            @RequestParam Long usuarioId,
-            @Valid @RequestBody AbrirDisputaDTO dto
+            @Valid @RequestBody AbrirDisputaDTO dto,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(disputaService.abrirDisputa(subastaId, usuarioId, dto));
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                disputaService.abrirDisputa(subastaId, usuario.getId(), dto)
+        );
     }
 
     @PutMapping("/{id}/resolver")
     public ResponseEntity<Disputa> resolverDisputa(
             @PathVariable Long id,
-            @RequestParam Long adminId,
-            @Valid @RequestBody ResolverDisputaDTO dto
+            @Valid @RequestBody ResolverDisputaDTO dto,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(disputaService.resolverDisputa(id, adminId, dto));
+        Usuario admin = (Usuario) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                disputaService.resolverDisputa(id, admin.getId(), dto)
+        );
     }
 
     @GetMapping
