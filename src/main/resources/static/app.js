@@ -360,6 +360,21 @@ async function cargarDetalle() {
         const fechaCierre = document.getElementById("fechaFinDetalle");
         if (fechaCierre) fechaCierre.innerText = formatearFecha(s.fechaCierre);
 
+        const bloqueDisputa = document.getElementById("bloqueDisputa");
+
+        if (bloqueDisputa) {
+
+            const usuario = await getUsuarioActual();
+
+            const esVendedor = s.vendedor?.id === usuario.id;
+            const esGanador = s.ganador?.id === usuario.id;
+
+            bloqueDisputa.style.display =
+                s.estado === "ADJUDICADA" && (esVendedor || esGanador)
+                    ? "block"
+                    : "none";
+        }
+
         await cargarPujas(id);
     } catch (error) {
         alert(error.message || "Error cargando subasta");
@@ -470,7 +485,6 @@ async function cargarPanelAdmin() {
 
     await adminCargarUsuarios();
     await adminCargarSubastas();
-    await adminCargarDisputas();
 }
 
 async function adminCargarUsuarios() {
@@ -772,3 +786,46 @@ async function adminResolverDisputa() {
     await adminCargarDisputas();
     await adminCargarSubastas();
 }
+
+async function abrirDisputa() {
+
+    if (!requireLogin()) return;
+
+    const subastaId = localStorage.getItem("subastaId");
+
+    const motivo = document.getElementById("motivoDisputa").value.trim();
+    const descripcion = document.getElementById("descripcionDisputa").value.trim();
+
+    if (!motivo || !descripcion) {
+        alert("Completá el motivo y la descripción.");
+        return;
+    }
+
+    try {
+
+        const dto = {
+            motivo,
+            descripcion
+        };
+
+        const res = await apiFetch(`${API_URL}/disputas?subastaId=${subastaId}`, {
+            method: "POST",
+            headers: authHeaders({
+                "Content-Type": "application/json"
+            }),
+            body: JSON.stringify(dto)
+        });
+
+        if (!res.ok) {
+            throw new Error(await leerError(res, "No se pudo abrir la disputa"));
+        }
+
+        alert("Disputa abierta correctamente.");
+
+        await cargarDetalle();
+
+    } catch (error) {
+        alert(error.message || "Error al abrir la disputa");
+    }
+}
+
